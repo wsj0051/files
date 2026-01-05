@@ -1,0 +1,2660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程表 🦋</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Comic+Neue:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 主题1: 樱花粉 - 默认 */
+        :root,
+        [data-theme="sakura"] {
+            --primary-light: #FFE5F1;
+            --primary-medium: #FFB6D9;
+            --primary-dark: #FF69B4;
+            --secondary-light: #E5D4FF;
+            --secondary-medium: #C4A7E7;
+            --accent: #B2F5EA;
+            --text-dark: #5A3E5E;
+            --text-light: #8B7A8E;
+            --white: #FFFFFF;
+            --shadow: 0 8px 32px rgba(255, 105, 180, 0.2);
+            --shadow-hover: 0 12px 48px rgba(255, 105, 180, 0.3);
+            --gradient-bg: linear-gradient(135deg, #FFE5F1 0%, #E5D4FF 50%, #B2F5EA 100%);
+            --gradient-header: linear-gradient(135deg, #FF69B4 0%, #C4A7E7 50%, #FF69B4 100%);
+            --gradient-btn: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%);
+        }
+
+        /* 主题2: 梦幻紫 */
+        [data-theme="dream"] {
+            --primary-light: #E8D5FF;
+            --primary-medium: #C49BFF;
+            --primary-dark: #9B59B6;
+            --secondary-light: #F0E6FF;
+            --secondary-medium: #D4A5FF;
+            --accent: #FFD1DC;
+            --text-dark: #4A3058;
+            --text-light: #7A5A8E;
+            --shadow: 0 8px 32px rgba(155, 89, 182, 0.2);
+            --shadow-hover: 0 12px 48px rgba(155, 89, 182, 0.3);
+            --gradient-bg: linear-gradient(135deg, #E8D5FF 0%, #F0E6FF 50%, #FFD1DC 100%);
+            --gradient-header: linear-gradient(135deg, #9B59B6 0%, #D4A5FF 50%, #9B59B6 100%);
+            --gradient-btn: linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%);
+        }
+
+        /* 主题3: 彩虹糖 */
+        [data-theme="rainbow"] {
+            --primary-light: #FFE5E5;
+            --primary-medium: #FFB3B3;
+            --primary-dark: #FF6B6B;
+            --secondary-light: #FFF5CC;
+            --secondary-medium: #FFE066;
+            --accent: #C5F0A4;
+            --text-dark: #5A4040;
+            --text-light: #8B6A6A;
+            --shadow: 0 8px 32px rgba(255, 107, 107, 0.2);
+            --shadow-hover: 0 12px 48px rgba(255, 107, 107, 0.3);
+            --gradient-bg: linear-gradient(135deg, #FFE5E5 0%, #FFF5CC 25%, #C5F0A4 50%, #B3E5FC 75%, #E5D5FF 100%);
+            --gradient-header: linear-gradient(135deg, #FF6B6B 0%, #FFE066 25%, #4ECDC4 50%, #45B7D1 75%, #96CEB4 100%);
+            --gradient-btn: linear-gradient(135deg, #FF6B6B 0%, #FFE066 100%);
+        }
+
+        /* 主题4: 深海蓝 */
+        [data-theme="ocean"] {
+            --primary-light: #E3F2FD;
+            --primary-medium: #90CAF9;
+            --primary-dark: #2196F3;
+            --secondary-light: #E0F7FA;
+            --secondary-medium: #4DD0E1;
+            --accent: #B2EBF2;
+            --text-dark: #1A3A5C;
+            --text-light: #5A7A9A;
+            --shadow: 0 8px 32px rgba(33, 150, 243, 0.2);
+            --shadow-hover: 0 12px 48px rgba(33, 150, 243, 0.3);
+            --gradient-bg: linear-gradient(135deg, #E3F2FD 0%, #E0F7FA 50%, #B2EBF2 100%);
+            --gradient-header: linear-gradient(135deg, #2196F3 0%, #4DD0E1 50%, #2196F3 100%);
+            --gradient-btn: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        }
+
+        /* 主题5: 森林绿 */
+        [data-theme="forest"] {
+            --primary-light: #E8F5E9;
+            --primary-medium: #A5D6A7;
+            --primary-dark: #4CAF50;
+            --secondary-light: #F1F8E9;
+            --secondary-medium: #AED581;
+            --accent: #DCEDC8;
+            --text-dark: #1B5E20;
+            --text-light: #4A7A4E;
+            --shadow: 0 8px 32px rgba(76, 175, 80, 0.2);
+            --shadow-hover: 0 12px 48px rgba(76, 175, 80, 0.3);
+            --gradient-bg: linear-gradient(135deg, #E8F5E9 0%, #F1F8E9 50%, #DCEDC8 100%);
+            --gradient-header: linear-gradient(135deg, #4CAF50 0%, #AED581 50%, #4CAF50 100%);
+            --gradient-btn: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+        }
+
+        /* 主题6: 太空灰 */
+        [data-theme="space"] {
+            --primary-light: #ECEFF1;
+            --primary-medium: #90A4AE;
+            --primary-dark: #546E7A;
+            --secondary-light: #F5F5F5;
+            --secondary-medium: #BDBDBD;
+            --accent: #B0BEC5;
+            --text-dark: #263238;
+            --text-light: #607D8B;
+            --shadow: 0 8px 32px rgba(84, 110, 122, 0.2);
+            --shadow-hover: 0 12px 48px rgba(84, 110, 122, 0.3);
+            --gradient-bg: linear-gradient(135deg, #ECEFF1 0%, #F5F5F5 50%, #B0BEC5 100%);
+            --gradient-header: linear-gradient(135deg, #546E7A 0%, #90A4AE 50%, #546E7A 100%);
+            --gradient-btn: linear-gradient(135deg, #546E7A 0%, #37474F 100%);
+        }
+
+        /* 兼容旧变量名 */
+        :root {
+            --pink-light: var(--primary-light);
+            --pink-medium: var(--primary-medium);
+            --pink-dark: var(--primary-dark);
+            --purple-light: var(--secondary-light);
+            --purple-medium: var(--secondary-medium);
+            --lavender: #E6E6FA;
+            --mint: var(--accent);
+            --peach: #FFDAB9;
+            --yellow-light: #FFF9C4;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', 'Comic Neue', sans-serif;
+            background: var(--gradient-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            transition: background 0.5s ease;
+        }
+
+        /* 可爱装饰元素 */
+        .decoration {
+            position: fixed;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .butterfly {
+            font-size: 2rem;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .butterfly:nth-child(1) {
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+
+        .butterfly:nth-child(2) {
+            top: 20%;
+            right: 8%;
+            animation-delay: 1s;
+        }
+
+        .butterfly:nth-child(3) {
+            bottom: 15%;
+            left: 10%;
+            animation-delay: 2s;
+        }
+
+        .butterfly:nth-child(4) {
+            bottom: 25%;
+            right: 5%;
+            animation-delay: 3s;
+        }
+
+        .flower {
+            font-size: 1.5rem;
+            animation: spin 20s linear infinite;
+        }
+
+        .flower:nth-child(5) {
+            top: 30%;
+            left: 3%;
+        }
+
+        .flower:nth-child(6) {
+            top: 60%;
+            right: 4%;
+        }
+
+        .flower:nth-child(7) {
+            bottom: 10%;
+            left: 15%;
+        }
+
+        .star {
+            font-size: 1.2rem;
+            animation: twinkle 2s ease-in-out infinite;
+        }
+
+        .star:nth-child(8) {
+            top: 15%;
+            left: 20%;
+            animation-delay: 0.5s;
+        }
+
+        .star:nth-child(9) {
+            top: 50%;
+            right: 15%;
+            animation-delay: 1s;
+        }
+
+        .star:nth-child(10) {
+            bottom: 20%;
+            right: 20%;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(10deg);
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 1rem;
+            animation: fadeInDown 0.8s ease;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 229, 241, 0.9) 100%);
+            padding: 1rem;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            border: 3px solid var(--pink-medium);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-header);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            font-family: 'Comic Neue', 'Noto Sans SC', sans-serif;
+        }
+
+        .owner-name {
+            font-size: 1.3rem;
+            color: var(--pink-dark);
+            font-weight: 600;
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: minmax(300px, 420px) 1fr;
+            gap: 2rem;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        /* 配置面板 */
+        .config-panel {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 229, 241, 0.95) 100%);
+            border: 3px solid var(--pink-medium);
+            border-radius: 30px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .config-panel:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .config-panel h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--pink-dark);
+            font-family: 'Comic Neue', 'Noto Sans SC', sans-serif;
+            text-align: center;
+        }
+
+        .course-manager {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .add-course-section {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .add-course-section input {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border: 2px solid var(--pink-medium);
+            border-radius: 15px;
+            font-size: 0.95rem;
+            font-family: 'Noto Sans SC', sans-serif;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .add-course-section input:focus {
+            border-color: var(--pink-dark);
+            box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.2);
+        }
+
+        .btn-add {
+            background: var(--gradient-btn);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 0 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.5);
+        }
+
+        .course-list-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            border: 2px dashed var(--pink-light);
+        }
+
+        .course-tag {
+            background: white;
+            padding: 0.5rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            border: 2px solid var(--pink-light);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .course-tag:hover {
+            border-color: var(--pink-medium);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .course-color-picker {
+            width: 20px;
+            height: 20px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+        }
+
+        .course-delete-btn {
+            width: 18px;
+            height: 18px;
+            background: var(--pink-light);
+            color: var(--pink-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .course-delete-btn:hover {
+            background: var(--pink-dark);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 激励语输入 */
+        .motivation-section {
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 2px dashed var(--mint);
+        }
+
+        .motivation-section h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--pink-dark);
+            font-family: 'Comic Neue', 'Noto Sans SC', sans-serif;
+            text-align: center;
+        }
+
+        .motivation-input {
+            margin-bottom: 0;
+        }
+
+        .motivation-input label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .motivation-input textarea {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            background: white;
+            border: 2px solid var(--mint);
+            border-radius: 15px;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans SC', sans-serif;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .motivation-input textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: rgba(178, 245, 234, 0.2);
+            box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.2);
+            transform: scale(1.02);
+        }
+
+        .motivation-input textarea::placeholder {
+            color: var(--text-light);
+        }
+
+        .motivation-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+
+        .motivation-controls textarea {
+            flex: 1;
+        }
+
+        .dice-btn {
+            padding: 0.9rem 1rem;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            border: 2px solid #FFB6D9;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(255, 215, 0, 0.3);
+            min-width: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dice-btn:hover {
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .dice-btn:active {
+            animation: diceRoll 0.5s ease;
+        }
+
+        @keyframes diceRoll {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            25% {
+                transform: rotate(90deg) scale(1.1);
+            }
+
+            50% {
+                transform: rotate(180deg) scale(1.2);
+            }
+
+            75% {
+                transform: rotate(270deg) scale(1.1);
+            }
+
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        /* 按钮 */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .btn-save {
+            background: var(--gradient-btn);
+            color: white;
+            box-shadow: 0 5px 20px rgba(255, 105, 180, 0.4);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(255, 105, 180, 0.6);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #C4A7E7 0%, #9370DB 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(196, 167, 231, 0.4);
+        }
+
+        .btn-clear:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(196, 167, 231, 0.6);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, var(--primary-medium) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(255, 182, 217, 0.4);
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-print:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(255, 182, 217, 0.6);
+        }
+
+        /* 预览面板 */
+        .preview-panel {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(229, 212, 255, 0.95) 100%);
+            border: 3px solid var(--purple-medium);
+            border-radius: 30px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .preview-header h2 {
+            font-size: 1.5rem;
+            color: var(--purple-medium);
+            font-family: 'Comic Neue', 'Noto Sans SC', sans-serif;
+            flex: 1;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* 课程表样式 */
+        .schedule-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            padding: 1rem;
+            text-align: center;
+            border: 2px solid var(--pink-light);
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, var(--pink-medium) 0%, var(--purple-light) 100%);
+            font-weight: 700;
+            color: var(--text-dark);
+            font-size: 1rem;
+        }
+
+        .schedule-table td {
+            background: white;
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .schedule-table td:hover {
+            background: var(--pink-light);
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(255, 105, 180, 0.2);
+        }
+
+        .schedule-table td.rest-cell {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-medium) 100%);
+            color: var(--pink-dark);
+            font-weight: 700;
+        }
+
+        .schedule-table td.course-cell {
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .schedule-table td.empty-cell {
+            color: var(--text-light);
+            font-style: italic;
+        }
+
+        /* 打印样式 */
+        .print-only {
+            display: none;
+        }
+
+        @media print {
+            body {
+                background: white;
+                color: black;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .container {
+                display: none;
+            }
+
+            .decoration {
+                display: none;
+            }
+
+            .print-only {
+                display: block;
+            }
+
+            .print-header {
+                display: none;
+            }
+
+            .print-footer {
+                display: none;
+            }
+
+            .schedule-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 0;
+                page-break-inside: avoid;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                border: 2px solid #FFB6D9;
+                padding: 8px 4px;
+                text-align: center;
+                font-size: 10pt;
+            }
+
+            .schedule-table th {
+                background: #FFE5F1 !important;
+                font-weight: bold;
+                font-size: 11pt;
+                color: #5A3E5E !important;
+            }
+
+            .schedule-table td {
+                font-size: 10pt;
+                min-height: 30px;
+                color: #5A3E5E !important;
+            }
+
+            .schedule-table td.rest-cell {
+                background: #FFE5F1 !important;
+                color: #FF69B4 !important;
+                font-weight: bold;
+            }
+
+            .schedule-table td.course-cell {
+                color: #5A3E5E !important;
+                font-weight: 600;
+            }
+
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+        }
+
+        /* 课程选择弹窗 */
+        .course-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .course-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .course-modal {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 229, 241, 0.98) 100%);
+            border: 3px solid var(--pink-medium);
+            border-radius: 30px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(255, 105, 180, 0.4);
+            transform: scale(0.8) translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .course-modal-overlay.active .course-modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .course-modal-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px dashed var(--pink-medium);
+        }
+
+        .course-modal-header h3 {
+            font-size: 1.4rem;
+            color: var(--pink-dark);
+            font-family: 'Comic Neue', 'Noto Sans SC', sans-serif;
+            margin-bottom: 0.5rem;
+        }
+
+        .course-modal-header p {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .course-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .course-option {
+            padding: 0.8rem 0.5rem;
+            background: white;
+            border: 2px solid var(--pink-light);
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .course-option:hover {
+            background: var(--pink-light);
+            border-color: var(--pink-dark);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 105, 180, 0.3);
+        }
+
+        .course-option.rest-option {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-medium) 100%);
+            border-color: var(--pink-medium);
+        }
+
+        .course-option.rest-option:hover {
+            background: linear-gradient(135deg, var(--primary-medium) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .course-modal-custom {
+            margin-bottom: 1.5rem;
+        }
+
+        .course-modal-custom label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .course-modal-custom input {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            background: white;
+            border: 2px solid var(--pink-medium);
+            border-radius: 15px;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .course-modal-custom input:focus {
+            outline: none;
+            border-color: var(--pink-dark);
+            box-shadow: 0 0 0 4px rgba(255, 105, 180, 0.2);
+        }
+
+        .course-modal-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .course-modal-buttons .btn {
+            flex: 1;
+        }
+
+        .btn-confirm {
+            background: var(--gradient-btn);
+            color: white;
+            box-shadow: 0 5px 20px rgba(255, 105, 180, 0.4);
+        }
+
+        .btn-confirm:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(255, 105, 180, 0.6);
+        }
+
+        .btn-cancel {
+            background: linear-gradient(135deg, #C4A7E7 0%, #9370DB 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(196, 167, 231, 0.4);
+        }
+
+        .btn-cancel:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(196, 167, 231, 0.6);
+        }
+
+        .btn-clear-cell {
+            background: linear-gradient(135deg, var(--primary-medium) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 182, 217, 0.4);
+        }
+
+        .btn-clear-cell:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 182, 217, 0.6);
+        }
+
+        /* 可点击的单元格样式 */
+        .schedule-table td.clickable-cell {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .schedule-table td.clickable-cell::after {
+            content: '✏️';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.7rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .schedule-table td.clickable-cell:hover::after {
+            opacity: 0.6;
+        }
+
+        .schedule-table td.clickable-cell:hover {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--secondary-light) 100%) !important;
+            transform: scale(1.08);
+            box-shadow: var(--shadow);
+            z-index: 1;
+        }
+
+        /* 动画 */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .config-panel {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+        }
+
+        /* 确认弹窗遮罩 */
+        .confirm-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+        .confirm-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media print {
+            .period-controls {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .preview-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .butterfly,
+            .flower,
+            .star {
+                font-size: 1rem;
+            }
+        }
+
+        /* 通知动画 */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        /* 主题选择器样式 */
+        .theme-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .theme-btn.active {
+            border-color: var(--primary-dark);
+            transform: scale(1.15);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-btn[data-theme="sakura"] {
+            background: linear-gradient(135deg, #FFB6D9, #FF69B4);
+        }
+
+        .theme-btn[data-theme="dream"] {
+            background: linear-gradient(135deg, #C49BFF, #9B59B6);
+        }
+
+        .theme-btn[data-theme="rainbow"] {
+            background: linear-gradient(135deg, #FF6B6B, #FFE066, #4ECDC4);
+        }
+
+        .theme-btn[data-theme="ocean"] {
+            background: linear-gradient(135deg, #90CAF9, #2196F3);
+        }
+
+        .theme-btn[data-theme="forest"] {
+            background: linear-gradient(135deg, #A5D6A7, #4CAF50);
+        }
+
+        .theme-btn[data-theme="space"] {
+            background: linear-gradient(135deg, #90A4AE, #546E7A);
+        }
+
+        /* 名字可编辑样式 */
+        .owner-name {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .owner-name:hover {
+            opacity: 0.8;
+        }
+
+        .owner-name .edit-icon {
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .owner-name:hover .edit-icon {
+            opacity: 1;
+        }
+
+        .name-input-container {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .name-input-container.active {
+            display: flex;
+            justify-content: center;
+        }
+
+        .name-input {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--primary-medium);
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            background: white;
+            text-align: center;
+            width: 150px;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: var(--primary-dark);
+            box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.2);
+        }
+
+        .name-confirm-btn {
+            padding: 0.5rem 1rem;
+            background: var(--gradient-btn);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .name-confirm-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* 时间编辑弹窗 */
+        .time-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .time-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .time-modal {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 229, 241, 0.98) 100%);
+            border: 3px solid var(--primary-medium);
+            border-radius: 25px;
+            padding: 1.5rem;
+            max-width: 350px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(255, 105, 180, 0.4);
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+
+        .time-modal-overlay.active .time-modal {
+            transform: scale(1);
+        }
+
+        .time-modal h3 {
+            text-align: center;
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .time-inputs {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .time-inputs input {
+            
+            padding: 0.6rem;
+            border: 2px solid var(--primary-medium);
+            border-radius: 10px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .time-inputs input:focus {
+            outline: none;
+            border-color: var(--primary-dark);
+        }
+
+        .time-inputs span {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+
+        .time-modal-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .time-modal-buttons .btn {
+            flex: 1;
+            padding: 0.7rem;
+            font-size: 0.9rem;
+        }
+
+        /* 时间单元格样式 */
+        .schedule-table td.time-cell {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .schedule-table td.time-cell:hover {
+            background: var(--primary-light) !important;
+            transform: scale(1.02);
+        }
+
+        .schedule-table td.time-cell .time-display {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            display: block;
+            margin-top: 2px;
+        }
+
+        .schedule-table td.time-cell::after {
+            content: '⏰';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.6rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .schedule-table td.time-cell:hover::after {
+            opacity: 0.6;
+        }
+
+        /* 周末控制 */
+        .weekend-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* 开关样式 */
+        .switch {
+            display: flex;
+            align-items: center;
+            width: auto;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: relative;
+            cursor: pointer;
+            width: 50px;
+            height: 24px;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-dark);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .switch-label {
+            margin-left: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        .weekend-switches {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .print-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 可爱装饰元素 -->
+    <div class="decoration butterfly">🦋</div>
+    <div class="decoration butterfly">🦋</div>
+    <div class="decoration butterfly">🦋</div>
+    <div class="decoration butterfly">🦋</div>
+    <div class="decoration flower">🌸</div>
+    <div class="decoration flower">🌺</div>
+    <div class="decoration flower">🌼</div>
+    <div class="decoration star">⭐</div>
+    <div class="decoration star">✨</div>
+    <div class="decoration star">💫</div>
+
+    <div class="container">
+        <header class="header">
+            <h1>🌈 我的课程表 🌈</h1>
+            <div class="owner-name" id="ownerNameDisplay" onclick="showNameEdit()">
+                <span id="ownerIcon">👧</span>
+                <span id="ownerNameText"></span>
+                <span id="ownerDecor">🎀</span>
+                <span class="edit-icon">✏️</span>
+            </div>
+            <div class="name-input-container" id="nameInputContainer">
+                <input type="text" class="name-input" id="nameInput" placeholder="输入名字" maxlength="10">
+                <button class="name-confirm-btn" onclick="confirmNameEdit()">确定</button>
+            </div>
+            <p class="subtitle">让学习变得更有趣 ✨</p>
+            <div class="theme-selector">
+                <button class="theme-btn active" data-theme="sakura" title="🌸 樱花粉">🌸</button>
+                <button class="theme-btn" data-theme="dream" title="💜 梦幻紫">🌙</button>
+                <button class="theme-btn" data-theme="rainbow" title="🌈 彩虹糖">🍭</button>
+                <button class="theme-btn" data-theme="ocean" title="🌊 深海蓝">🐬</button>
+                <button class="theme-btn" data-theme="forest" title="🌲 森林绿">🌲</button>
+                <button class="theme-btn" data-theme="space" title="🚀 太空灰">🚀</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- 配置面板 -->
+            <div class="config-panel">
+                <h2>📝 课程配置 🎨</h2>
+                <div class="course-manager">
+                    <p class="subtitle" style="text-align:center; margin-bottom: 1rem;">⬇️ 在这里添加课程，点击课程表即可选择哦</p>
+                    <div class="add-course-section">
+                        <input type="text" id="newCourseInput" placeholder="输入新课程名称..." maxlength="10">
+                        <button class="btn-add" id="addCourseBtn">➕ 添加</button>
+                    </div>
+                    <div class="course-list-container" id="courseListManager">
+                        <!-- 课程标签动态生成 -->
+                    </div>
+                </div>
+                <div class="action-buttons" style="margin-top: 1rem;">
+                    <button class="btn btn-save" id="exportBtn">📤 导出备份</button>
+                    <label class="btn btn-clear" for="importFile" style="cursor: pointer;">📥 导入备份</label>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                </div>
+            </div>
+
+            <!-- 预览面板 -->
+            <div class="preview-panel">
+                <div class="preview-header">
+                    <h2>👀 课程表预览 🌟</h2>
+                    <div class="print-controls">
+                        <button class="btn btn-print" id="printBtn">🖨️ 打印</button>
+                        <div class="weekend-switches">
+                            <label class="switch">
+                                <input type="checkbox" id="showSaturday">
+                                <span class="slider"></span>
+                                <span class="switch-label">周六</span>
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="showSunday">
+                                <span class="slider"></span>
+                                <span class="switch-label">周日</span>
+                            </label>
+                            <label class="switch">
+                                <input type="checkbox" id="equalWidth">
+                                <span class="slider"></span>
+                                <span class="switch-label">等宽</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="schedule-container" id="schedulePreview">
+                    <!-- 课程表将通过JavaScript动态生成 -->
+                </div>
+                <div class="motivation-section">
+
+                    <div class="motivation-input">
+                        <div class="motivation-controls">
+                            <textarea id="motivationText" placeholder="输入你的激励语...">学习很苦,坚持很酷</textarea>
+                            <button class="dice-btn" id="diceBtn" title="随机换一条激励语">🎲</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 课程选项列表 -->
+    <datalist id="courseList">
+        <option value="语文">
+        <option value="数学">
+        <option value="英语">
+        <option value="道德与法治">
+        <option value="历史">
+        <option value="地理">
+        <option value="物理">
+        <option value="化学">
+        <option value="生物">
+        <option value="体育与健康">
+        <option value="音乐">
+        <option value="美术">
+        <option value="信息技术">
+        <option value="劳动/综合实践活动">
+        <option value="计算机">
+        <option value="起床">
+        <option value="早自习">
+        <option value="晚自习">
+        <option value="晚自习"></option>
+        <option value="😴 休息"></option>
+    </datalist>
+
+    <!-- 打印专用区域 -->
+    <div class="print-only">
+        <div id="printSchedule"></div>
+    </div>
+    <!-- 课程选择弹窗 -->
+    <div class="course-modal-overlay" id="courseModalOverlay">
+        <div class="course-modal">
+            <div class="course-modal-header">
+                <h3>📚 选择课程 ✨</h3>
+                <p id="modalCellInfo">周一 第1节</p>
+            </div>
+            <div class="course-options" id="courseOptions">
+                <!-- 课程选项将通过JavaScript动态生成 -->
+            </div>
+            <div class="course-modal-custom">
+                <label>✏️ 或者输入自定义课程：</label>
+                <input type="text" id="customCourseInput" placeholder="输入课程名称...">
+            </div>
+            <div class="course-modal-buttons">
+                <button class="btn btn-confirm" id="confirmCourseBtn">💾 确定</button>
+                <button class="btn btn-clear-cell" id="clearCellBtn">🗑️ 清空</button>
+                <button class="btn btn-cancel" id="cancelCourseBtn">❌ 取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 时间编辑弹窗 -->
+    <div class="time-modal-overlay" id="timeModalOverlay">
+        <div class="time-modal">
+            <h3>⏰ 设置上课时间</h3>
+            <p id="timePeriodInfo" style="text-align:center; color: var(--text-light); margin-bottom: 1rem;">第1节</p>
+            <div style="margin-bottom: 1rem;">
+                <label for="periodNameInput" style="display: block; margin-bottom: 0.5rem; color: var(--text-dark); font-size: 0.9rem; font-weight: 600;">✏️ 节次名称：</label>
+                <input type="text" id="periodNameInput" placeholder="输入节次名称（如：早读）" maxlength="10" style="width: 100%; padding: 0.6rem; border: 2px solid var(--primary-medium); border-radius: 10px; font-size: 1rem; text-align: center;">
+            </div>
+            <div class="time-inputs">
+                <input type="time" id="timeStart" value="08:00">
+                <span>—</span>
+                <input type="time" id="timeEnd" value="08:45">
+            </div>
+            <div class="time-modal-buttons">
+                <button class="btn btn-confirm" id="confirmTimeBtn">💾 确定</button>
+                <button class="btn btn-clear-cell" id="clearTimeBtn">🗑️ 清空</button>
+                <button class="btn btn-cancel" id="cancelTimeBtn">❌ 取消</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 确认删除弹窗 -->
+    <div class="confirm-modal-overlay" id="confirmModalOverlay">
+        <div class="course-modal" style="width: 320px;">
+            <div class="course-modal-header">
+                <h3>⚠️ 确认删除</h3>
+            </div>
+            <div style="padding: 1.5rem; text-align: center; font-size: 1.1rem; color: var(--text-dark);">
+                <p id="confirmMessage">确定要删除吗？</p>
+            </div>
+            <div class="course-modal-buttons">
+                <button class="btn btn-confirm" id="confirmYesBtn">✔️ 确定</button>
+                <button class="btn btn-cancel" id="confirmNoBtn">❌ 取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 课程数据结构 - 每天的课程是一个数组，支持动态增减
+        const scheduleData = {
+            monday: { courses: ['', '', '', '', '', '', '', ''] },
+            tuesday: { courses: ['', '', '', '', '', '', '', ''] },
+            wednesday: { courses: ['', '', '', '', '', '', '', ''] },
+            thursday: { courses: ['', '', '', '', '', '', '', ''] },
+            friday: { courses: ['', '', '', '', '', '', '', ''] },
+            saturday: { courses: ['', '', '', '', '', '', '', ''] },
+            sunday: { courses: ['', '', '', '', '', '', '', ''] }
+        };
+
+        // 当前选中的日期
+        let currentDay = 'monday';
+
+        // 默认课程列表
+        const defaultCourseList = [
+            {name: '语文', color: '#FFE5F1'},
+            {name: '数学', color: '#E5D4FF'},
+            {name: '英语', color: '#B2F5EA'},
+            {name: '道德与法治', color: '#FFDAB9'},
+            {name: '历史', color: '#FFF9C4'},
+            {name: '地理', color: '#E8D5FF'},
+            {name: '物理', color: '#C4A7E7'},
+            {name: '化学', color: '#90CAF9'},
+            {name: '生物', color: '#A5D6A7'},
+            {name: '体育与健康', color: '#E0F7FA'},
+            {name: '音乐', color: '#F1F8E9'},
+            {name: '美术', color: '#ECEFF1'},
+            {name: '信息技术', color: '#FFE5E5'},
+            {name: '劳动/综合实践活动', color: '#FFF5CC'},
+            {name: '计算机', color: '#C5F0A4'},
+            {name: '晚自习', color: '#E5D5FF'}
+        ];
+
+        // 动态课程列表
+        let courseList = [...defaultCourseList];
+
+        // 激励语
+        let motivationText = '学习很苦,坚持很酷';
+
+        // 用户名字
+        let ownerName = '韩丽萍';
+
+        // 当前主题
+        let currentTheme = 'sakura';
+
+        // 课程节数（默认8节）
+        let periodCount = 8;
+
+        // 课程时间 (动态数组)
+        let periodTimes = [];
+        for (let i = 0; i < 15; i++) {
+            periodTimes.push({ start: '', end: '' });
+        }
+
+        // 节次名称 (动态数组，默认“第X节”)
+        let periodNames = [];
+        for (let i = 0; i < 15; i++) {
+            periodNames.push(`第${i + 1}节`);
+        }
+
+        // 当前编辑的时间索引
+        let currentTimeIndex = -1;
+
+        // 显示的日子
+        let shownDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+        // 日子顺序
+        const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        // 主题装饰元素配置
+        const themeDecorations = {
+            sakura: {
+                items: ['🦋', '🌸', '🌺', '🌼', '⭐', '✨', '💫', '🎀', '💖', '🌷'],
+                icon: '👧',
+                decor: '🎀',
+                printLeft: '🦋🌸',
+                printRight: '🌺🦋'
+            },
+            dream: {
+                items: ['🌙', '⭐', '✨', '💫', '🔮', '💜', '🦄', '☁️', '🌟', '💎'],
+                icon: '👸',
+                decor: '💜',
+                printLeft: '🌙✨',
+                printRight: '⭐🔮'
+            },
+            rainbow: {
+                items: ['🌈', '🍭', '🍬', '🎈', '🎀', '💕', '🦋', '🌺', '🍩', '🧁'],
+                icon: '👧',
+                decor: '🌈',
+                printLeft: '🌈🍭',
+                printRight: '🍬🌈'
+            },
+            ocean: {
+                items: ['🐬', '🌊', '🐳', '🐠', '🦈', '⚓', '🐚', '🦀', '🌴', '⛵'],
+                icon: '👦',
+                decor: '🐬',
+                printLeft: '🐬🌊',
+                printRight: '🐳🌊'
+            },
+            forest: {
+                items: ['🌲', '🌳', '🍀', '🌿', '🦊', '🐿️', '🍄', '🦌', '🌻', '🐦'],
+                icon: '👦',
+                decor: '🌲',
+                printLeft: '🌲🍀',
+                printRight: '🌿🌳'
+            },
+            space: {
+                items: ['🚀', '🌟', '🪐', '👨‍🚀', '🛸', '☄️', '🌌', '🔭', '⭐', '🌙'],
+                icon: '👦',
+                decor: '🚀',
+                printLeft: '🚀🌟',
+                printRight: '🪐🛸'
+            }
+        };
+
+
+        // 100条激励话术
+        const motivationQuotes = [
+            '学习很苦,坚持很酷',
+            '每一次努力，都是成长的阶梯',
+            '今天的努力，是明天的骄傲',
+            '相信自己，你可以做到',
+            '梦想在前方，努力在路上',
+            '小小的进步，也是大大的成功',
+            '做最好的自己，不负青春时光',
+            '勇敢追梦，永不放弃',
+            '每天进步一点点，就是最棒的自己',
+            '用微笑面对挑战，用努力创造奇迹',
+            '你比想象中更优秀',
+            '坚持下去，美好正在路上',
+            '学习是给自己最好的礼物',
+            '今天的汗水，是明天的彩虹',
+            '相信努力的力量',
+            '每一个困难，都是成长的机会',
+            '做一个温暖又努力的女孩',
+            '知识是最美的装饰',
+            '用心学习，快乐成长',
+            '你的努力，时光会记得',
+            '保持热爱，奔赴山海',
+            '做自己的小太阳',
+            '努力到无能为力，拼搏到感动自己',
+            '星光不问赶路人',
+            '温柔且坚定地前行',
+            '每一天都是新的开始',
+            '用知识点亮未来',
+            '做一个闪闪发光的女孩',
+            '越努力，越幸运',
+            '书山有路勤为径',
+            '学海无涯苦作舟',
+            '天道酬勤，厚积薄发',
+            '宝剑锋从磨砺出',
+            '梅花香自苦寒来',
+            '少年易学老难成',
+            '一寸光阴不可轻',
+            '黑发不知勤学早',
+            '白首方悔读书迟',
+            '读书破万卷，下笔如有神',
+            '书籍是人类进步的阶梯',
+            '知识改变命运',
+            '学习成就未来',
+            '今日事，今日毕',
+            '明日复明日，明日何其多',
+            '我生待明日，万事成蹉跎',
+            '少壮不努力，老大徒伤悲',
+            '一分耕耘，一分收获',
+            '不经一番寒彻骨，怎得梅花扑鼻香',
+            '有志者事竟成',
+            '世上无难事，只怕有心人',
+            '只要功夫深，铁杵磨成针',
+            '千里之行，始于足下',
+            '不积跬步，无以至千里',
+            '不积小流，无以成江海',
+            '锲而不舍，金石可镂',
+            '绳锯木断，水滴石穿',
+            '业精于勤，荒于嬉',
+            '行成于思，毁于随',
+            '书读百遍，其义自见',
+            '温故而知新',
+            '学而不思则罔',
+            '思而不学则殆',
+            '知之为知之，不知为不知',
+            '三人行，必有我师焉',
+            '敏而好学，不耻下问',
+            '学无止境',
+            '活到老，学到老',
+            '笨鸟先飞早入林',
+            '勤能补拙是良训',
+            '一份辛苦一份才',
+            '天才是百分之一的灵感加百分之九十九的汗水',
+            '成功的秘诀在于坚持',
+            '失败是成功之母',
+            '从哪里跌倒就从哪里爬起来',
+            '困难像弹簧，你弱它就强',
+            '自信是成功的第一秘诀',
+            '态度决定一切',
+            '细节决定成败',
+            '机会总是留给有准备的人',
+            '今天的你，比昨天更优秀',
+            '每一次尝试，都是一次成长',
+            '勇敢做自己，世界会为你让路',
+            '用努力书写精彩人生',
+            '做一个有梦想的追梦人',
+            '让优秀成为一种习惯',
+            '用行动证明自己',
+            '不怕慢，就怕站',
+            '一步一个脚印，踏实前行',
+            '心有多大，舞台就有多大',
+            '你的潜力无限',
+            '做最棒的自己',
+            '用智慧点亮人生',
+            '学习使我快乐',
+            '知识就是力量',
+            '读书使人明智',
+            '腹有诗书气自华',
+            '书香伴我成长',
+            '在书中遇见更好的自己',
+            '每一本书都是一个新世界',
+            '阅读让生活更美好'
+        ];
+
+        // 星期映射
+        const dayMap = {
+            monday: '周一',
+            tuesday: '周二',
+            wednesday: '周三',
+            thursday: '周四',
+            friday: '周五',
+            saturday: '周六',
+            sunday: '周日'
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            initEventListeners();
+            initModalEvents();
+            initThemeEvents();
+            initTimeModalEvents();
+            applyTheme(currentTheme);
+            updateOwnerNameDisplay();
+            renderSchedule();
+            renderCourseManager();
+            updateWeekendSwitches();
+        });
+
+        function updateWeekendSwitches() {
+            document.getElementById('showSaturday').checked = shownDays.includes('saturday');
+            document.getElementById('showSunday').checked = shownDays.includes('sunday');
+            document.getElementById('equalWidth').checked = false; // 默认不等宽
+        }
+
+        // 初始化事件监听
+        function initEventListeners() {
+            // 添加课程按钮
+            document.getElementById('addCourseBtn').addEventListener('click', () => {
+                const input = document.getElementById('newCourseInput');
+                const courseName = input.value.trim();
+                if (courseName) {
+                    addCourse(courseName);
+                    input.value = '';
+                }
+            });
+
+            // 添加课程回车事件
+            document.getElementById('newCourseInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const courseName = e.target.value.trim();
+                    if (courseName) {
+                        addCourse(courseName);
+                        e.target.value = '';
+                    }
+                }
+            });
+
+
+
+            // 打印按钮
+            document.getElementById('printBtn').addEventListener('click', printSchedule);
+
+            // 激励语输入
+            document.getElementById('motivationText').addEventListener('input', (e) => {
+                motivationText = e.target.value.trim();
+                saveToLocalStorage();
+            });
+
+            // 骰子按钮 - 随机换激励语
+            document.getElementById('diceBtn').addEventListener('click', () => {
+                // 随机选择一条激励语
+                const randomIndex = Math.floor(Math.random() * motivationQuotes.length);
+                const randomQuote = motivationQuotes[randomIndex];
+
+                // 更新到输入框
+                document.getElementById('motivationText').value = randomQuote;
+                motivationText = randomQuote;
+
+                // 保存
+                saveToLocalStorage();
+
+                // 显示通知
+                showNotification('🎲 已换一条新的激励语！');
+            });
+
+            // 周末开关
+            document.getElementById('showSaturday').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    addDay('saturday');
+                } else {
+                    removeDay('saturday');
+                }
+            });
+
+            document.getElementById('showSunday').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    addDay('sunday');
+                } else {
+                    removeDay('sunday');
+                }
+            });
+
+            document.getElementById('equalWidth').addEventListener('change', (e) => {
+                const table = document.querySelector('.schedule-table');
+                if (e.target.checked) {
+                    table.style.tableLayout = 'fixed';
+                } else {
+                    table.style.tableLayout = 'auto';
+                }
+            });
+
+            // 导出备份
+            document.getElementById('exportBtn').addEventListener('click', exportData);
+
+            // 导入备份
+            document.getElementById('importFile').addEventListener('change', importData);
+        }
+
+        function exportData() {
+            const data = localStorage.getItem('scheduleData_v3');
+            if (!data) {
+                showNotification('⚠️ 没有数据可导出！');
+                return;
+            }
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'schedule_backup.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('📤 数据已导出！');
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = event.target.result;
+                    const parsed = JSON.parse(data);
+                    if (parsed) {
+                        localStorage.setItem('scheduleData_v3', data);
+                        showNotification('📥 数据已导入！页面将刷新...');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        throw new Error();
+                    }
+                } catch (err) {
+                    showNotification('⚠️ 导入失败：无效的文件！');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        function addDay(day) {
+            if (!shownDays.includes(day)) {
+                shownDays.push(day);
+                saveToLocalStorage();
+                renderSchedule();
+                showNotification(`✅ 已添加${dayMap[day]}`);
+            }
+        }
+
+        function removeDay(day) {
+            const index = shownDays.indexOf(day);
+            if (index > -1) {
+                shownDays.splice(index, 1);
+                saveToLocalStorage();
+                renderSchedule();
+                showNotification(`🗑️ 已删除${dayMap[day]}`);
+            }
+        }
+
+        // 课程图标列表
+        const periodIcons = ['📚', '✏️', '📖', '🔬', '🎨', '🎵', '⚽', '💻', '🌟', '📝', '🎯', '🚀'];
+
+        // 渲染课程管理列表
+        function renderCourseManager() {
+            const container = document.getElementById('courseListManager');
+            if (!container) return;
+
+            container.innerHTML = ''; // 清空现有内容
+
+            courseList.forEach((courseObj, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'course-tag';
+                tag.style.backgroundColor = courseObj.color;
+
+                // 课程名称文本
+                const textNode = document.createTextNode(courseObj.name + ' ');
+                tag.appendChild(textNode);
+
+                // 颜色选择器
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.className = 'course-color-picker';
+                colorInput.value = courseObj.color;
+                colorInput.addEventListener('input', (e) => {
+                    courseObj.color = e.target.value;
+                    tag.style.backgroundColor = courseObj.color;
+                    saveToLocalStorage();
+                    renderSchedule();
+                });
+                tag.appendChild(colorInput);
+
+                // 删除按钮
+                const deleteBtn = document.createElement('span');
+                deleteBtn.className = 'course-delete-btn';
+                deleteBtn.title = '删除';
+                deleteBtn.textContent = '✕';
+
+                // 直接绑定点击事件（防止事件冒泡问题）
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // 阻止冒泡
+                    deleteCourse(index);
+                });
+
+                tag.appendChild(deleteBtn);
+                container.appendChild(tag);
+            });
+        }
+
+        // 添加新课程
+        function addCourse(name) {
+            if (courseList.some(c => c.name === name)) {
+                showNotification('⚠️ 该课程已存在！');
+                return;
+            }
+            if (courseList.length >= 50) {
+                showNotification('⚠️ 课程数量已达上限！');
+                return;
+            }
+            // 默认颜色，使用随机柔和色
+            const defaultColor = getRandomPastelColor();
+            courseList.push({name, color: defaultColor});
+            saveToLocalStorage();
+            renderCourseManager();
+            renderSchedule(); // 更新颜色
+            showNotification(`✅ 已添加课程：${name}`);
+        }
+
+        function getRandomPastelColor() {
+            const hue = Math.floor(Math.random() * 360);
+            return `hsl(${hue}, 70%, 90%)`;
+        }
+
+        // 删除课程
+        function deleteCourse(index) {
+            const courseName = courseList[index].name;
+            openConfirmModal(`确定要删除课程“${courseName}”吗？`, () => {
+                courseList.splice(index, 1);
+                saveToLocalStorage();
+                renderCourseManager();
+                renderSchedule();
+                showNotification(`🗑️ 已删除课程：${courseName}`);
+            });
+        }
+
+        // 确认弹窗逻辑
+        let confirmCallback = null;
+
+        function openConfirmModal(message, callback) {
+            document.getElementById('confirmMessage').textContent = message;
+            confirmCallback = callback;
+            document.getElementById('confirmModalOverlay').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModalOverlay').classList.remove('active');
+            confirmCallback = null;
+        }
+
+        // 初始化确认弹窗事件
+        document.getElementById('confirmYesBtn').addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+            closeConfirmModal();
+        });
+
+        document.getElementById('confirmNoBtn').addEventListener('click', closeConfirmModal);
+        document.getElementById('confirmModalOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'confirmModalOverlay') closeConfirmModal();
+        });
+
+        // 渲染课程表
+        function renderSchedule() {
+            const container = document.getElementById('schedulePreview');
+
+            let html = '<table class="schedule-table">';
+
+            // 表头
+            html += '<thead><tr>';
+            html += '<th>时间</th>';
+            const sortedShownDays = shownDays.slice().sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+            sortedShownDays.forEach(day => {
+                html += `<th>${dayMap[day]}</th>`;
+            });
+            html += '</tr></thead>';
+
+            // 表体
+            html += '<tbody>';
+
+            // 根据periodCount渲染所有课程节
+            for (let i = 0; i < periodCount; i++) {
+                html += '<tr>';
+                // 时间单元格 - 可点击
+                const timeStr = getTimeDisplayStr(i);
+                const periodName = periodNames[i] || `第${i + 1}节`;
+                html += `<td class="time-cell" data-period-index="${i}"><strong>${periodName}</strong>${timeStr}</td>`;
+                sortedShownDays.forEach(day => {
+                    const course = scheduleData[day].courses[i] || '';
+                    const cellClass = course ? 'course-cell clickable-cell' : 'empty-cell clickable-cell';
+                    const displayText = course || '-';
+                    const color = getCourseColor(course);
+                    const style = course ? `style="background-color: ${color};"` : '';
+                    html += `<td class="${cellClass}" data-day="${day}" data-index="${i}" ${style}>${displayText}</td>`;
+                });
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+
+            // 添加课程节数控制按钮
+            html += `
+                <div class="period-controls" style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem;">
+                    <button class="btn btn-period-remove" id="removePeriodBtn" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: linear-gradient(135deg, var(--secondary-medium) 0%, var(--secondary-light) 100%); border: 2px solid var(--primary-medium); border-radius: 15px; cursor: pointer; color: var(--text-dark); font-weight: 600;">➖ 减少一节</button>
+                    <span style="display: flex; align-items: center; font-weight: 600; color: var(--text-dark);">共 ${periodCount} 节课</span>
+                    <button class="btn btn-period-add" id="addPeriodBtn" style="padding: 0.5rem 1rem; font-size: 0.9rem; background: linear-gradient(135deg, var(--primary-medium) 0%, var(--primary-dark) 100%); border: 2px solid var(--primary-medium); border-radius: 15px; cursor: pointer; color: white; font-weight: 600;">➕ 新增一节</button>
+                </div>
+            `;
+
+            container.innerHTML = html;
+
+            // 添加单元格点击事件
+            addCellClickListeners();
+            // 添加时间单元格点击事件
+            addTimeCellClickListeners();
+            // 添加课程节数控制事件
+            addPeriodControlListeners();
+        }
+
+        // 获取课程颜色
+        function getCourseColor(course) {
+            if (!course) return '';
+            const courseObj = courseList.find(c => c.name === course);
+            return courseObj ? courseObj.color : getRandomPastelColor();
+        }
+
+        // 添加课程节数控制事件
+        function addPeriodControlListeners() {
+            document.getElementById('addPeriodBtn').addEventListener('click', () => {
+                if (periodCount < 15) {
+                    periodCount++;
+                    // 确保所有天的数据数组长度足够
+                    for (let day in scheduleData) {
+                        while (scheduleData[day].courses.length < periodCount) {
+                            scheduleData[day].courses.push('');
+                        }
+                    }
+                    // 确保periodTimes数组长度足够
+                    while (periodTimes.length < periodCount) {
+                        periodTimes.push({ start: '', end: '' });
+                    }
+                    // 确保periodNames数组长度足够
+                    while (periodNames.length < periodCount) {
+                        periodNames.push(`第${periodNames.length + 1}节`);
+                    }
+                    saveToLocalStorage();
+                    renderSchedule();
+
+                    showNotification(`➕ 已添加第${periodCount}节课`);
+                } else {
+                    showNotification('⚠️ 最多支持15节课');
+                }
+            });
+
+            document.getElementById('removePeriodBtn').addEventListener('click', () => {
+                if (periodCount > 1) {
+                    periodCount--;
+                    saveToLocalStorage();
+                    renderSchedule();
+
+                    showNotification(`➖ 已删除最后一节课`);
+                } else {
+                    showNotification('⚠️ 至少需要1节课');
+                }
+            });
+        }
+
+        // 获取时间显示字符串
+        function getTimeDisplayStr(index) {
+            const time = periodTimes[index];
+            if (time && time.start && time.end) {
+                return `<span class="time-display">${time.start}-${time.end}</span>`;
+            }
+            return '';
+        }
+
+        // 添加时间单元格点击事件
+        function addTimeCellClickListeners() {
+            document.querySelectorAll('.time-cell').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    const index = parseInt(cell.dataset.periodIndex);
+                    openTimeModal(index);
+                });
+            });
+        }
+
+        // 弹窗相关变量
+        let currentEditCell = null; // 当前编辑的单元格信息
+
+
+
+        // 添加单元格点击事件
+        function addCellClickListeners() {
+            document.querySelectorAll('.clickable-cell').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    const day = cell.dataset.day;
+                    const index = parseInt(cell.dataset.index);
+                    openCourseModal(day, index);
+                });
+            });
+        }
+
+        // 打开课程选择弹窗
+        function openCourseModal(day, index) {
+            currentEditCell = { day, index };
+
+            // 更新弹窗标题信息
+            document.getElementById('modalCellInfo').textContent = `${dayMap[day]} 第${index + 1}节`;
+
+            // 生成课程选项
+            const optionsContainer = document.getElementById('courseOptions');
+            let optionsHTML = '';
+            courseList.forEach(courseObj => {
+                optionsHTML += `<div class="course-option" data-course="${courseObj.name}" style="background-color: ${courseObj.color};">${courseObj.name}</div>`;
+            });
+            // 添加休息选项
+            optionsHTML += `<div class="course-option rest-option" data-course="😴 休息">😴 休息</div>`;
+            optionsContainer.innerHTML = optionsHTML;
+
+            // 添加课程选项点击事件
+            document.querySelectorAll('.course-option').forEach(option => {
+                // 单击：填充到输入框
+                option.addEventListener('click', () => {
+                    const course = option.dataset.course;
+                    document.getElementById('customCourseInput').value = course;
+                });
+                // 双击：直接选中并确认
+                option.addEventListener('dblclick', () => {
+                    const course = option.dataset.course;
+                    document.getElementById('customCourseInput').value = course;
+                    confirmCourseSelection();
+                });
+            });
+
+            // 设置当前值到输入框
+            const currentValue = scheduleData[day].courses[index] || '';
+            document.getElementById('customCourseInput').value = currentValue;
+
+            // 显示弹窗
+            document.getElementById('courseModalOverlay').classList.add('active');
+
+            // 聚焦到输入框
+            setTimeout(() => {
+                document.getElementById('customCourseInput').focus();
+            }, 100);
+        }
+
+        // 关闭课程选择弹窗
+        function closeCourseModal() {
+            document.getElementById('courseModalOverlay').classList.remove('active');
+            currentEditCell = null;
+        }
+
+        // 确认课程选择
+        function confirmCourseSelection() {
+            if (!currentEditCell) return;
+
+            const { day, index } = currentEditCell;
+            const newCourse = document.getElementById('customCourseInput').value.trim();
+
+            // 更新数据
+            scheduleData[day].courses[index] = newCourse;
+
+            // 保存到本地存储
+            saveToLocalStorage();
+
+            // 重新渲染
+            renderSchedule();
+
+            // 关闭弹窗
+            closeCourseModal();
+
+            // 显示通知
+            showNotification('✅ 课程已更新！');
+        }
+
+        // 清空单元格
+        function clearCellCourse() {
+            if (!currentEditCell) return;
+
+            const { day, index } = currentEditCell;
+
+            // 清空数据
+            scheduleData[day].courses[index] = '';
+
+            // 保存到本地存储
+            saveToLocalStorage();
+
+            // 重新渲染
+            renderSchedule();
+
+            // 关闭弹窗
+            closeCourseModal();
+
+            // 显示通知
+            showNotification('🗑️ 已清空该节课！');
+        }
+
+        // 初始化弹窗事件
+        function initModalEvents() {
+            // 确认按钮
+            document.getElementById('confirmCourseBtn').addEventListener('click', confirmCourseSelection);
+
+            // 清空按钮
+            document.getElementById('clearCellBtn').addEventListener('click', clearCellCourse);
+
+            // 取消按钮
+            document.getElementById('cancelCourseBtn').addEventListener('click', closeCourseModal);
+
+            // 点击遮罩层关闭
+            document.getElementById('courseModalOverlay').addEventListener('click', (e) => {
+                if (e.target.id === 'courseModalOverlay') {
+                    closeCourseModal();
+                }
+            });
+
+            // 回车确认
+            document.getElementById('customCourseInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    confirmCourseSelection();
+                } else if (e.key === 'Escape') {
+                    closeCourseModal();
+                }
+            });
+        }
+
+        // 打印课程表
+        function printSchedule() {
+            // 复制课程表到打印区域
+            const scheduleHTML = document.getElementById('schedulePreview').querySelector('.schedule-table').outerHTML;
+            document.getElementById('printSchedule').innerHTML = scheduleHTML;
+
+            // 触发打印
+            window.print();
+        }
+
+        // 保存到本地存储
+        function saveToLocalStorage() {
+            const dataToSave = {
+                scheduleData: scheduleData,
+                motivationText: motivationText,
+                ownerName: ownerName,
+                currentTheme: currentTheme,
+                periodTimes: periodTimes,
+                periodCount: periodCount,
+                courseList: courseList,
+                periodNames: periodNames,
+                shownDays: shownDays
+            };
+            localStorage.setItem('scheduleData_v3', JSON.stringify(dataToSave));
+        }
+
+        // 从本地存储加载
+        function loadFromLocalStorage() {
+            // 尝试加载v3版数据
+            let saved = localStorage.getItem('scheduleData_v3');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.scheduleData) {
+                        // 合并课程数据
+                        for (let day in parsed.scheduleData) {
+                            if (scheduleData[day] && parsed.scheduleData[day].courses) {
+                                scheduleData[day].courses = parsed.scheduleData[day].courses;
+                            }
+                        }
+                    }
+                    motivationText = parsed.motivationText || '学习很苦,坚持很酷';
+                    ownerName = parsed.ownerName;
+                    currentTheme = parsed.currentTheme || 'sakura';
+                    periodCount = parsed.periodCount || 8;
+                    if (parsed.periodTimes) {
+                        periodTimes = parsed.periodTimes;
+                    }
+                    if (parsed.periodNames) {
+                        periodNames = parsed.periodNames;
+                    }
+                    if (parsed.courseList && Array.isArray(parsed.courseList)) {
+                        courseList = parsed.courseList.map(c => {
+                            if (typeof c === 'string') {
+                                return {name: c, color: getRandomPastelColor()};
+                            } else {
+                                return c;
+                            }
+                        });
+                    }
+                    if (parsed.shownDays && Array.isArray(parsed.shownDays)) {
+                        shownDays = parsed.shownDays;
+                    }
+                    document.getElementById('motivationText').value = motivationText;
+                } catch (e) {
+                    console.error('加载数据失败:', e);
+                }
+                return;
+            }
+
+            // 兼容v2版本数据
+            saved = localStorage.getItem('scheduleData_v2');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    motivationText = parsed.motivationText || '学习很苦,坚持很酷';
+                    ownerName = parsed.ownerName;
+                    currentTheme = parsed.currentTheme || 'sakura';
+                    if (parsed.periodTimes) {
+                        periodTimes = parsed.periodTimes;
+                    }
+                    // 尝试迁移旧数据格式
+                    if (parsed.scheduleData) {
+                        for (let day in parsed.scheduleData) {
+                            const oldData = parsed.scheduleData[day];
+                            if (oldData.morning && oldData.afternoon) {
+                                scheduleData[day].courses = [...oldData.morning, ...oldData.afternoon];
+                            } else if (oldData.courses) {
+                                scheduleData[day].courses = oldData.courses;
+                            }
+                        }
+                    }
+                    document.getElementById('motivationText').value = motivationText;
+                } catch (e) {
+                    console.error('加载数据失败:', e);
+                }
+                return;
+            }
+
+            // 兼容最旧版本数据
+            saved = localStorage.getItem('scheduleData_mengzhongqi');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.scheduleData) {
+                        for (let day in parsed.scheduleData) {
+                            const oldData = parsed.scheduleData[day];
+                            if (oldData.morning && oldData.afternoon) {
+                                scheduleData[day].courses = [...oldData.morning, ...oldData.afternoon];
+                            }
+                        }
+                        motivationText = parsed.motivationText || '学习很苦,坚持很酷';
+                    }
+                    document.getElementById('motivationText').value = motivationText;
+                } catch (e) {
+                    console.error('加载数据失败:', e);
+                }
+            }
+        }
+
+        // 显示通知
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.className = 'notification-toast';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-medium) 100%);
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 20px;
+                box-shadow: var(--shadow);
+                z-index: 10000;
+                font-weight: 700;
+                animation: slideInRight 0.3s ease;
+                border: 2px solid white;
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // ========== 名字编辑功能 ==========
+        function showNameEdit() {
+            document.getElementById('ownerNameDisplay').style.display = 'none';
+            document.getElementById('nameInputContainer').classList.add('active');
+            const input = document.getElementById('nameInput');
+            input.value = ownerName;
+            input.focus();
+            input.select();
+        }
+
+        function confirmNameEdit() {
+            const input = document.getElementById('nameInput');
+            const newName = input.value.trim();
+            if (newName) {
+                ownerName = newName;
+                updateOwnerNameDisplay();
+                saveToLocalStorage();
+                showNotification('✅ 名字已更新！');
+            }
+            document.getElementById('nameInputContainer').classList.remove('active');
+            document.getElementById('ownerNameDisplay').style.display = 'flex';
+        }
+
+        function updateOwnerNameDisplay() {
+            const theme = themeDecorations[currentTheme];
+            document.getElementById('ownerNameText').textContent = ownerName;
+            document.getElementById('ownerIcon').textContent = theme.icon;
+            document.getElementById('ownerDecor').textContent = theme.decor;
+            // 更新页面标题
+            document.title = `${ownerName}的课程表 🦋`;
+        }
+
+        // 名字输入框的键盘事件
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('nameInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    confirmNameEdit();
+                } else if (e.key === 'Escape') {
+                    document.getElementById('nameInputContainer').classList.remove('active');
+                    document.getElementById('ownerNameDisplay').style.display = 'flex';
+                }
+            });
+        });
+
+        // ========== 主题切换功能 ==========
+        function initThemeEvents() {
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const theme = btn.dataset.theme;
+                    applyTheme(theme);
+                    saveToLocalStorage();
+                    showNotification('🎨 主题已切换！');
+                });
+            });
+        }
+
+        function applyTheme(theme) {
+            currentTheme = theme;
+            // 设置主题
+            document.body.setAttribute('data-theme', theme);
+            // 更新主题按钮状态
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === theme);
+            });
+            // 更新装饰元素
+            updateDecorations();
+            // 更新名字显示
+            updateOwnerNameDisplay();
+        }
+
+        function updateDecorations() {
+            const theme = themeDecorations[currentTheme];
+            const decorations = document.querySelectorAll('.decoration');
+            decorations.forEach((dec, index) => {
+                const itemIndex = index % theme.items.length;
+                dec.textContent = theme.items[itemIndex];
+            });
+        }
+
+        // ========== 时间编辑功能 ==========
+        function initTimeModalEvents() {
+            document.getElementById('confirmTimeBtn').addEventListener('click', confirmTimeEdit);
+            document.getElementById('clearTimeBtn').addEventListener('click', clearTimeEdit);
+            document.getElementById('cancelTimeBtn').addEventListener('click', closeTimeModal);
+
+            document.getElementById('timeModalOverlay').addEventListener('click', (e) => {
+                if (e.target.id === 'timeModalOverlay') {
+                    closeTimeModal();
+                }
+            });
+        }
+
+        function openTimeModal(index) {
+            currentTimeIndex = index;
+            document.getElementById('timePeriodInfo').textContent = periodNames[index] || `第${index + 1}节`;
+
+            const time = periodTimes[index];
+            document.getElementById('timeStart').value = time.start || '08:00';
+            document.getElementById('timeEnd').value = time.end || '08:45';
+            document.getElementById('periodNameInput').value = periodNames[index] || `第${index + 1}节`;
+
+            document.getElementById('timeModalOverlay').classList.add('active');
+        }
+
+        function closeTimeModal() {
+            document.getElementById('timeModalOverlay').classList.remove('active');
+            currentTimeIndex = -1;
+        }
+
+        function confirmTimeEdit() {
+            if (currentTimeIndex < 0) return;
+
+            const startTime = document.getElementById('timeStart').value;
+            const endTime = document.getElementById('timeEnd').value;
+            const periodName = document.getElementById('periodNameInput').value.trim() || `第${currentTimeIndex + 1}节`;
+
+            periodTimes[currentTimeIndex] = { start: startTime, end: endTime };
+            periodNames[currentTimeIndex] = periodName;
+            saveToLocalStorage();
+            renderSchedule();
+            closeTimeModal();
+            showNotification('⏰ 时间已设置！');
+        }
+
+        function clearTimeEdit() {
+            if (currentTimeIndex < 0) return;
+
+            periodTimes[currentTimeIndex] = { start: '', end: '' };
+            periodNames[currentTimeIndex] = `第${currentTimeIndex + 1}节`;
+            saveToLocalStorage();
+            renderSchedule();
+            closeTimeModal();
+            showNotification('🗑️ 时间已清空！');
+        }
+    </script>
+</body>
+
+</html>
