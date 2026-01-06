@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>点名器</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- SheetJS -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f5f7fa;
+  --card:#ffffff;
+  --text:#333;
+  --primary:#4f7cff;
+  --name-bg:#eee;
+}
+[data-theme="dark"]{
+  --bg:#1e1f22;
+  --card:#2a2b2f;
+  --text:#eee;
+  --primary:#4f7cff;
+  --name-bg:#444;
+}
+[data-theme="green"]{
+  --bg:#f0f7f2;
+  --card:#ffffff;
+  --text:#333;
+  --primary:#3ba776;
+  --name-bg:#eee;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:system-ui, sans-serif;
+  color:var(--text);
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:16px;
+}
+.card{
+  background:var(--card);
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:16px;
+  box-shadow:0 6px 16px rgba(0,0,0,.08);
+}
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:center;
+}
+button,select,input{
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-size:14px;
+}
+button{background:var(--primary);color:#fff;border:none;cursor:pointer}
+button.secondary{background:#888;}
+.names{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(80px,1fr));
+  gap:6px;
+}
+.name{
+  padding:6px;
+  text-align:center;
+  border-radius:6px;
+  background:var(--name-bg);
+  color:var(--text);
+  cursor:pointer;
+  transition:0.2s;
+}
+.name.used{
+  text-decoration:line-through;
+  opacity:.5;
+}
+.name:hover{
+  transform:scale(1.05);
+}
+.popup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  animation:fadeIn 0.3s;
+}
+.popup-content{
+  background:var(--card);
+  padding:24px;
+  border-radius:16px;
+  font-size:26px;
+  text-align:center;
+  position:relative;
+}
+.popup-content span{
+  display:block;
+  margin:8px 0;
+  color:var(--primary);
+  font-weight:bold;
+  font-size:32px;
+  animation:blink 1s infinite alternate;
+}
+@keyframes blink{
+  0%{opacity:1;}
+  100%{opacity:0.3;}
+}
+@keyframes fadeIn{
+  0%{opacity:0;}
+  100%{opacity:1;}
+}
+
+/* 点名规则布局 */
+.rules{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:10px;
+}
+.rule-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:#f2f4f8;
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:14px;
+}
+.rule-item input[type="number"]{
+  width:60px;
+}
+.hint{
+  font-size:13px;
+  color:#888;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<!-- 班级选择 + 点名规则 -->
+<div class="card">
+  <h3>📘 班级与点名规则</h3>
+  <div class="row">
+    <label>班级 
+      <select id="classSelect"></select>
+    </label>
+    <label>人数 
+      <input id="count" type="number" value="1" min="1">
+    </label>
+    <label><input type="checkbox" id="repeat" checked> 允许重复</label>
+    <label><input type="checkbox" id="voice" checked> 语音播报</label>
+    <label>主题
+      <select id="theme">
+        <option value="">浅色</option>
+        <option value="dark">深色</option>
+        <option value="green">护眼</option>
+      </select>
+    </label>
+  </div>
+  <div class="hint">班级通过 Excel 导入管理</div>
+</div>
+
+<!-- 操作按钮 -->
+<div class="card">
+  <div class="row">
+    <button onclick="start()">▶ 开始点名</button>
+    <button onclick="exportExcel()">导出Excel</button>
+    <input type="file" id="file" hidden>
+    <button onclick="document.getElementById('file').click()">导入Excel</button>
+    <button onclick="showHelp()">❓ 使用说明</button>
+  </div>
+</div>
+
+<!-- 学生名单显示 -->
+<div class="card">
+  <h3>👥 名单（点击可标记已点）</h3>
+  <div class="names" id="names"></div>
+</div>
+
+</div>
+
+<!-- 点名结果弹框 -->
+<div class="popup" id="popup" onclick="hidePopup()">
+  <div class="popup-content" id="popupText"></div>
+</div>
+
+<!-- 使用说明弹框 -->
+<div class="popup" id="helpPopup" onclick="hideHelp()">
+  <div class="popup-content" style="max-width:520px;font-size:14px;text-align:left"
+       onclick="event.stopPropagation()">
+    <h3>📘 点名器使用说明</h3>
+    <p><b>一、Excel 数据格式</b></p>
+    <ul>
+      <li>一个 Sheet 表示一个班级</li>
+      <li>Sheet 名称 = 班级名称</li>
+      <li>第一行为表头（写：姓名）</li>
+      <li>第一列填写姓名</li>
+    </ul>
+    <p><b>二、导入规则（重要）</b></p>
+    <ul>
+      <li>导入 Excel 后，会 <b>完全替换</b> 当前所有班级</li>
+      <li>原有班级和点名记录将被清空</li>
+      <li>建议导入前先导出备份</li>
+    </ul>
+    <p><b>三、导出说明</b></p>
+    <ul>
+      <li>导出为一个 Excel 文件</li>
+      <li>每个班级单独一个 Sheet</li>
+      <li>仅导出学生名单（不包含点名状态）</li>
+    </ul>
+    <p><b>四、点名流程</b></p>
+    <ol>
+      <li>选择班级</li>
+      <li>设置人数 / 是否重复 / 语音播报 / 主题</li>
+      <li>点击「开始点名」</li>
+    </ol>
+    <p style="text-align:center;color:#888;margin-top:10px">
+      点击空白处关闭说明
+    </p>
+  </div>
+</div>
+
+<script>
+/* ===== 数据 ===== */
+const KEY="rollcall_v5";
+let store=JSON.parse(localStorage.getItem(KEY))||{
+  classes:[{
+    name:"示例班级",
+    students:Array.from({length:30},(_,i)=>"学生"+(i+1)),
+    used:[]
+  }],
+  selectedIdx: 0,
+  theme: "",
+  count: 1,
+  repeat: true,
+  voice: true
+};
+let idx=0;
+
+/* ===== DOM ===== */
+const classSelect=document.getElementById("classSelect");
+const namesEl=document.getElementById("names");
+const popup=document.getElementById("popup");
+const popupText=document.getElementById("popupText");
+const count=document.getElementById("count");
+const repeat=document.getElementById("repeat");
+const voice=document.getElementById("voice");
+const theme=document.getElementById("theme");
+const file=document.getElementById("file");
+
+/* ===== 初始化 ===== */
+function init(){
+  classSelect.innerHTML="";
+  store.classes.forEach((c,i)=>{
+    if(!Array.isArray(c.used)) c.used=[];
+    const o=document.createElement("option");
+    o.value=i;o.textContent=c.name;
+    classSelect.appendChild(o);
+  });
+  idx = store.selectedIdx || 0;
+  // 确保 idx 在有效范围内
+  if (idx >= store.classes.length) idx = 0;
+  classSelect.value=idx;
+  theme.value = store.theme || "";
+  document.body.dataset.theme = store.theme || "";
+  count.value = store.count || 1;
+  repeat.checked = store.repeat !== undefined ? store.repeat : true;
+  voice.checked = store.voice !== undefined ? store.voice : true;
+  renderNames();
+}
+classSelect.onchange=e=>{
+  idx=+e.target.value; 
+  store.selectedIdx = idx; 
+  renderNames(); 
+  save();
+};
+
+/* ===== 渲染名单 ===== */
+function renderNames(){
+  const c=store.classes[idx];
+  namesEl.innerHTML="";
+  c.students.forEach((n,i)=>{
+    const d=document.createElement("div");
+    d.className="name"+(c.used.includes(i)?" used":"");
+    d.textContent=n;
+    d.onclick=()=>{ // 点击切换已点状态
+      if(c.used.includes(i)){
+        c.used=c.used.filter(x=>x!==i);
+      }else{
+        c.used.push(i);
+      }
+      renderNames();
+      save();
+    };
+    namesEl.appendChild(d);
+  });
+}
+
+/* ===== 点名 ===== */
+function start(){
+  const c=store.classes[idx];
+  const num=+count.value;
+  const allow=repeat.checked;
+  let pool=c.students.map((_,i)=>i).filter(i=>allow||!c.used.includes(i));
+  if(pool.length===0) return alert("没人可点了");
+
+  let res=[];
+  for(let i=0;i<num&&pool.length;i++){
+    const r=pool.splice(Math.random()*pool.length|0,1)[0];
+    res.push(r);
+    if(!allow) c.used.push(r);
+  }
+  showPopup(res.map(i=>c.students[i]));
+  if(voice.checked) speak(res.map(i=>c.students[i]).join("、"));
+  renderNames();
+  save();
+}
+
+/* ===== 弹框 ===== */
+function showPopup(list){
+  popupText.innerHTML=list.map(n=>`<span>${n}</span>`).join("");
+  popup.style.display="flex";
+}
+function hidePopup(){popup.style.display="none"}
+
+/* ===== 语音 ===== */
+function speak(t){
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang="zh-CN";
+  speechSynthesis.speak(u);
+}
+
+/* ===== Excel 导入导出 ===== */
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+  store.classes.forEach(c=>{
+    const ws=XLSX.utils.aoa_to_sheet([["姓名"], ...c.students.map(s=>[s])]);
+    XLSX.utils.book_append_sheet(wb, ws, c.name);
+  });
+  XLSX.writeFile(wb,"点名数据.xlsx");
+}
+file.onchange=e=>{
+  const r=new FileReader();
+  r.onload=()=>{
+    const wb=XLSX.read(r.result,{type:"binary"});
+    store.classes=wb.SheetNames.map(n=>{
+      const a=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1}).slice(1);
+      return {name:n, students:a.map(x=>x[0]), used:[]};
+    });
+    idx=0;
+    store.selectedIdx = 0; // 导入后重置选中班级
+    init();
+    save();
+  };
+  r.readAsBinaryString(e.target.files[0]);
+};
+
+/* ===== 主题切换 & 其他设置 & 存储 ===== */
+theme.onchange=e=>{
+  document.body.dataset.theme=e.target.value;
+  store.theme = e.target.value;
+  save();
+};
+count.onchange=()=>{ 
+  store.count = +count.value; 
+  save(); 
+};
+repeat.onchange=()=>{ 
+  store.repeat = repeat.checked; 
+  save(); 
+};
+voice.onchange=()=>{ 
+  store.voice = voice.checked; 
+  save(); 
+};
+function save(){localStorage.setItem(KEY,JSON.stringify(store))}
+
+/* ===== 使用说明 ===== */
+function showHelp(){document.getElementById("helpPopup").style.display="flex";}
+function hideHelp(){document.getElementById("helpPopup").style.display="none";}
+
+/* ===== 初始化 ===== */
+init();
+</script>
+</body>
+</html>
