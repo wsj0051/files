@@ -14,3 +14,9 @@
   https://gitee.com/wsj0051/files/raw/main/img/avatar.jpg
   ```
 </details>
+
+## 课程表
+
++ [课表v2.0](./html/schedule_v2.html)
+
++ [课表v3.0](./html/schedule_v3/index.html)
