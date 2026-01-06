@@ -13,6 +13,7 @@
   --text:#333;
   --primary:#4f7cff;
   --name-bg:#eee;
+  --shadow: 0 6px 16px rgba(0,0,0,.08);
 }
 [data-theme="dark"]{
   --bg:#1e1f22;
@@ -20,6 +21,7 @@
   --text:#eee;
   --primary:#4f7cff;
   --name-bg:#444;
+  --shadow: 0 6px 16px rgba(0,0,0,.2);
 }
 [data-theme="green"]{
   --bg:#f0f7f2;
@@ -27,6 +29,7 @@
   --text:#333;
   --primary:#3ba776;
   --name-bg:#eee;
+  --shadow: 0 6px 16px rgba(0,0,0,.08);
 }
 
 body{
@@ -34,6 +37,7 @@ body{
   background:var(--bg);
   font-family:system-ui, sans-serif;
   color:var(--text);
+  transition: background 0.3s ease;
 }
 .container{
   max-width:900px;
@@ -45,7 +49,12 @@ body{
   border-radius:12px;
   padding:16px;
   margin-bottom:16px;
-  box-shadow:0 6px 16px rgba(0,0,0,.08);
+  box-shadow:var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,.12);
 }
 .row{
   display:flex;
@@ -58,13 +67,27 @@ button,select,input{
   border-radius:8px;
   border:1px solid #ccc;
   font-size:14px;
+  transition: all 0.2s ease;
 }
 button{background:var(--primary);color:#fff;border:none;cursor:pointer}
 button.secondary{background:#888;}
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,.1);
+}
+button:active {
+  transform: scale(0.95);
+}
 .names{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(80px,1fr));
   gap:6px;
+  opacity: 0;
+  animation: fadeInNames 0.5s ease forwards;
+}
+@keyframes fadeInNames {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .name{
   padding:6px;
@@ -73,14 +96,21 @@ button.secondary{background:#888;}
   background:var(--name-bg);
   color:var(--text);
   cursor:pointer;
-  transition:0.2s;
+  transition: transform 0.2s ease, background 0.2s ease;
+  animation: popIn 0.3s ease;
+}
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 .name.used{
   text-decoration:line-through;
   opacity:.5;
+  background: #ddd;
 }
 .name:hover{
-  transform:scale(1.05);
+  transform:scale(1.1) rotate(2deg);
+  box-shadow: 0 4px 8px rgba(0,0,0,.1);
 }
 .popup{
   position:fixed;
@@ -90,7 +120,7 @@ button.secondary{background:#888;}
   align-items:center;
   justify-content:center;
   z-index:1000;
-  animation:fadeIn 0.3s;
+  animation:fadeIn 0.3s ease;
 }
 .popup-content{
   background:var(--card);
@@ -99,6 +129,13 @@ button.secondary{background:#888;}
   font-size:26px;
   text-align:center;
   position:relative;
+  transform: scale(0.8);
+  opacity: 0;
+  animation: zoomIn 0.4s ease forwards;
+}
+@keyframes zoomIn {
+  from { transform: scale(0.8) rotate(-5deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
 }
 .popup-content span{
   display:block;
@@ -106,11 +143,11 @@ button.secondary{background:#888;}
   color:var(--primary);
   font-weight:bold;
   font-size:32px;
-  animation:blink 1s infinite alternate;
+  animation: glow 1.5s infinite alternate;
 }
-@keyframes blink{
-  0%{opacity:1;}
-  100%{opacity:0.3;}
+@keyframes glow {
+  0% { text-shadow: 0 0 5px var(--primary); }
+  100% { text-shadow: 0 0 15px var(--primary); }
 }
 @keyframes fadeIn{
   0%{opacity:0;}
@@ -132,18 +169,21 @@ button.secondary{background:#888;}
   padding:6px 10px;
   border-radius:8px;
   font-size:14px;
+  transition: background 0.2s ease;
 }
-.rule-item input[type="number"]{
-  width:60px;
+.rule-item:hover {
+  background: #e0e4ec;
 }
 .hint{
   font-size:13px;
   color:#888;
+  transition: color 0.3s ease;
 }
 </style>
 </head>
 
 <body>
+<canvas id="explosionCanvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999;"></canvas>
 <div class="container">
 
 <!-- 班级选择 + 点名规则 -->
@@ -173,6 +213,7 @@ button.secondary{background:#888;}
 <div class="card">
   <div class="row">
     <button onclick="start()">▶ 开始点名</button>
+    <button class="secondary" onclick="resetUsed()">🔄 重置已点</button>
     <button onclick="exportExcel()">导出Excel</button>
     <input type="file" id="file" hidden>
     <button onclick="document.getElementById('file').click()">导入Excel</button>
@@ -251,11 +292,11 @@ const classSelect=document.getElementById("classSelect");
 const namesEl=document.getElementById("names");
 const popup=document.getElementById("popup");
 const popupText=document.getElementById("popupText");
-const count=document.getElementById("count");
-const repeat=document.getElementById("repeat");
-const voice=document.getElementById("voice");
-const theme=document.getElementById("theme");
-const file=document.getElementById("file");
+const countEl=document.getElementById("count");
+const repeatEl=document.getElementById("repeat");
+const voiceEl=document.getElementById("voice");
+const themeEl=document.getElementById("theme");
+const fileEl=document.getElementById("file");
 
 /* ===== 初始化 ===== */
 function init(){
@@ -267,14 +308,13 @@ function init(){
     classSelect.appendChild(o);
   });
   idx = store.selectedIdx || 0;
-  // 确保 idx 在有效范围内
   if (idx >= store.classes.length) idx = 0;
   classSelect.value=idx;
-  theme.value = store.theme || "";
+  themeEl.value = store.theme || "";
   document.body.dataset.theme = store.theme || "";
-  count.value = store.count || 1;
-  repeat.checked = store.repeat !== undefined ? store.repeat : true;
-  voice.checked = store.voice !== undefined ? store.voice : true;
+  countEl.value = store.count || 1;
+  repeatEl.checked = store.repeat !== undefined ? store.repeat : true;
+  voiceEl.checked = store.voice !== undefined ? store.voice : true;
   renderNames();
 }
 classSelect.onchange=e=>{
@@ -292,7 +332,7 @@ function renderNames(){
     const d=document.createElement("div");
     d.className="name"+(c.used.includes(i)?" used":"");
     d.textContent=n;
-    d.onclick=()=>{ // 点击切换已点状态
+    d.onclick=()=>{ 
       if(c.used.includes(i)){
         c.used=c.used.filter(x=>x!==i);
       }else{
@@ -303,13 +343,17 @@ function renderNames(){
     };
     namesEl.appendChild(d);
   });
+  // 触发动画：移除并重新添加类以重置动画
+  namesEl.style.animation = 'none';
+  namesEl.offsetHeight; // 触发重绘
+  namesEl.style.animation = '';
 }
 
 /* ===== 点名 ===== */
 function start(){
   const c=store.classes[idx];
-  const num=+count.value;
-  const allow=repeat.checked;
+  const num=+countEl.value;
+  const allow=repeatEl.checked;
   let pool=c.students.map((_,i)=>i).filter(i=>allow||!c.used.includes(i));
   if(pool.length===0) return alert("没人可点了");
 
@@ -320,7 +364,7 @@ function start(){
     if(!allow) c.used.push(r);
   }
   showPopup(res.map(i=>c.students[i]));
-  if(voice.checked) speak(res.map(i=>c.students[i]).join("、"));
+  if(voiceEl.checked) speak(res.map(i=>c.students[i]).join("、"));
   renderNames();
   save();
 }
@@ -329,6 +373,7 @@ function start(){
 function showPopup(list){
   popupText.innerHTML=list.map(n=>`<span>${n}</span>`).join("");
   popup.style.display="flex";
+  triggerExplosion(); // 触发粒子爆炸
 }
 function hidePopup(){popup.style.display="none"}
 
@@ -348,16 +393,16 @@ function exportExcel(){
   });
   XLSX.writeFile(wb,"点名数据.xlsx");
 }
-file.onchange=e=>{
+fileEl.onchange=e=>{
   const r=new FileReader();
   r.onload=()=>{
     const wb=XLSX.read(r.result,{type:"binary"});
     store.classes=wb.SheetNames.map(n=>{
       const a=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1}).slice(1);
-      return {name:n, students:a.map(x=>x[0]), used:[]};
-    });
+      return {name:n, students:a.map(x=>x[0]).filter(Boolean), used:[]}; // 过滤空姓名
+    }).filter(c => c.students.length > 0); // 过滤空班级
     idx=0;
-    store.selectedIdx = 0; // 导入后重置选中班级
+    store.selectedIdx = 0;
     init();
     save();
   };
@@ -365,21 +410,21 @@ file.onchange=e=>{
 };
 
 /* ===== 主题切换 & 其他设置 & 存储 ===== */
-theme.onchange=e=>{
+themeEl.onchange=e=>{
   document.body.dataset.theme=e.target.value;
   store.theme = e.target.value;
   save();
 };
-count.onchange=()=>{ 
-  store.count = +count.value; 
+countEl.onchange=()=>{ 
+  store.count = +countEl.value; 
   save(); 
 };
-repeat.onchange=()=>{ 
-  store.repeat = repeat.checked; 
+repeatEl.onchange=()=>{ 
+  store.repeat = repeatEl.checked; 
   save(); 
 };
-voice.onchange=()=>{ 
-  store.voice = voice.checked; 
+voiceEl.onchange=()=>{ 
+  store.voice = voiceEl.checked; 
   save(); 
 };
 function save(){localStorage.setItem(KEY,JSON.stringify(store))}
@@ -387,6 +432,80 @@ function save(){localStorage.setItem(KEY,JSON.stringify(store))}
 /* ===== 使用说明 ===== */
 function showHelp(){document.getElementById("helpPopup").style.display="flex";}
 function hideHelp(){document.getElementById("helpPopup").style.display="none";}
+
+/* ===== 重置已点 ===== */
+function resetUsed(){
+  if (confirm("确定要重置所有已点名状态吗？")) {
+    store.classes[idx].used = [];
+    renderNames();
+    save();
+  }
+}
+
+/* ===== 粒子爆炸动画 ===== */
+let particles = [];
+class Particle {
+  constructor(x, y, radius, dx, dy, color) {
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.dx = dx;
+    this.dy = dy;
+    this.alpha = 1;
+    this.color = color;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+    ctx.fill();
+    ctx.restore();
+  }
+  update(ctx) {
+    this.draw(ctx);
+    this.alpha -= 0.01;
+    this.x += this.dx;
+    this.y += this.dy;
+  }
+}
+
+const explosionCanvas = document.getElementById("explosionCanvas");
+explosionCanvas.height = window.innerHeight;
+explosionCanvas.width = window.innerWidth;
+const expCtx = explosionCanvas.getContext("2d");
+
+function triggerExplosion() {
+  particles = [];
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+  const particleCount = 150;
+  const colors = ['#4f7cff', '#ff4f7c', '#7cff4f', '#ffff4f']; // 多颜色粒子
+
+  for (let i = 0; i < particleCount; i++) {
+    const dx = (Math.random() - 0.5) * (Math.random() * 8);
+    const dy = (Math.random() - 0.5) * (Math.random() * 8);
+    const radius = Math.random() * 4 + 1;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    particles.push(new Particle(centerX, centerY, radius, dx, dy, color));
+  }
+  explode();
+}
+
+function explode() {
+  expCtx.clearRect(0, 0, explosionCanvas.width, explosionCanvas.height);
+  particles.forEach((particle, i) => {
+    if (particle.alpha <= 0) {
+      particles.splice(i, 1);
+    } else {
+      particle.update(expCtx);
+    }
+  });
+  if (particles.length > 0) {
+    requestAnimationFrame(explode);
+  }
+}
 
 /* ===== 初始化 ===== */
 init();

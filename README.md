@@ -7,11 +7,7 @@
 
 ## 🖼️ img图片
 
-以 `img/avatar.jpg` 为例：
-
----
-
-### GitHub（推荐）
+以 `img/avatar.jpg`路径为例：
 
 - jsDelivr（官方）
   https://cdn.jsdelivr.net/gh/wsj0051/files@main/img/avatar.jpg
