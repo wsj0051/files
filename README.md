@@ -26,10 +26,19 @@
 在线打开（HTML 页面）：
 
 + [课表v2.0](./html/schedule_v2.html)
+  + 源自52pojie网 -https://www.52pojie.cn/forum.php?mod=viewthread&tid=2082106&highlight=%BF%CE%B3%CC%B1%ED
+
 
 + [课表v3.0](./html/schedule_v3/index.html)
+  + 源自52pojie网 -https://www.52pojie.cn/forum.php?mod=viewthread&tid=2055355&highlight=%BF%CE%B3%CC%B1%ED
 
+---
 
+## 🎲 随机点名表工具
+
++ [随机点名v1.0](./html/random_v1.html)
+
+```
 ---
 
 ## 📌 使用建议
