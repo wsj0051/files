@@ -29,10 +29,6 @@
 
 + [课表v3.0](./html/schedule_v3/index.html)
 
-> 提示  
-> - 页面为纯 HTML / JS  
-> - 可直接通过 GitHub Pages 或本地打开  
-> - 不依赖 Gitee Pages
 
 ---
 
@@ -42,12 +38,10 @@
   直接引用 jsDelivr / 镜像地址即可
 
 - **当工具仓库用**：  
-  README 只做入口说明，具体功能通过 HTML 页面访问
+  README 只做入口说明，具体功能通过 [HTML 页面访问](https://wsj0051.github.io/files/)
 
 ---
 
 ## 🔗 相关说明
 
-- 本仓库不依赖 Gitee Pages
 - README 仅作为仓库说明文档
-- 页面展示以 HTML 文件为准
