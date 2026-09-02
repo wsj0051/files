@@ -21,14 +21,9 @@
 
 ## 🗓️ 课程表
 
-在线打开（HTML 页面）：
-
-+ [课表v2.0](./html/schedule_v2.html)
-  + 源自52pojie网 -https://www.52pojie.cn/forum.php?mod=viewthread&tid=2082106&highlight=%BF%CE%B3%CC%B1%ED
-
-
-+ [课表v3.0](./html/schedule_v3/index.html)
-  + 源自52pojie网 -https://www.52pojie.cn/forum.php?mod=viewthread&tid=2055355&highlight=%BF%CE%B3%CC%B1%ED
++ [课表](./html/schedule/index.html)
++ [网页课表](https://wsj0051.github.io/files/html/schedule/index.html)
++ 源自52pojie网 -https://www.52pojie.cn/forum.php?mod=viewthread&tid=2055355&highlight=%BF%CE%B3%CC%B1%ED
 
 ---
 
@@ -44,7 +39,7 @@
   直接引用 jsDelivr / 镜像地址即可
 
 - **当工具仓库用**：  
-  README 只做入口说明，具体功能通过 [HTML 页面访问](https://wsj0051.github.io/files/)
+  README 只做入口说明，具体功能通过 [页面访问](https://wsj0051.github.io/files/)
 
 ---
 

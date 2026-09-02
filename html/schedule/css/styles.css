@@ -3132,7 +3132,7 @@ body.theme-dark .subject-info .teacher-name {
 
 /* 将课时设置标题和内容合并成一个模块 */
 .left-sidebar > .section-title:nth-child(1) {
-    margin-bottom: 0 !important;
+    margin-bottom: -20px !important; /* 抵消 .left-sidebar 的 flex gap: 20px，使标题与下方内容紧贴 */
     padding-bottom: 12px !important;
     border-bottom: none !important;
     border-radius: 8px 8px 0 0 !important;
@@ -4948,6 +4948,170 @@ body.theme-dark .section-title:hover {
     font-weight: normal;
 }
 
+/* 表格类型选择器（卡片式单选按钮组） */
+.app-type-setting {
+    padding-bottom: 14px;
+}
+
+.app-type-selector {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.app-type-option {
+    flex: 1;
+    min-width: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 12px 8px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    background: #fff;
+    text-align: center;
+    transition: all 0.25s ease;
+    user-select: none;
+}
+
+.app-type-option:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.app-type-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.app-type-option .app-type-icon {
+    font-size: 22px;
+    line-height: 1.2;
+    margin-bottom: 3px;
+    transition: transform 0.25s ease;
+}
+
+.app-type-option:hover .app-type-icon {
+    transform: scale(1.15);
+}
+
+.app-type-option .app-type-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+    transition: color 0.2s ease;
+}
+
+.app-type-option .app-type-desc {
+    font-size: 11px;
+    color: #999;
+    transition: color 0.2s ease;
+}
+
+.app-type-option.active {
+    border-color: var(--primary-color);
+    background: var(--primary-color);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+.app-type-option.active .app-type-name {
+    /* !important 覆盖 .modal-content span 的 color: var(--text-color) !important 规则，
+       否则选中卡片的文字会被强制成主题文字色（如深色主题绿底绿字、橙色主题橙底橙字），看不清 */
+    color: #fff !important;
+}
+
+.app-type-option.active .app-type-desc {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+body.theme-dark .app-type-option {
+    background: var(--background-color);
+}
+
+/* 优先级须高于上方 body.theme-dark .app-type-option (0-2-1)，
+   否则选中卡片的绿色背景会被覆盖成深色，看不出选中项 */
+body.theme-dark .app-type-option.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 3px 12px rgba(32, 201, 151, 0.35);
+}
+
+body.theme-dark .app-type-option .app-type-name {
+    color: var(--text-color);
+}
+
+body.theme-dark .app-type-option .app-type-desc {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+body.theme-dark .app-type-option.active .app-type-name {
+    color: #fff;
+}
+
+body.theme-dark .app-type-option.active .app-type-desc {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* 深色主题下设置项卡片 - 确保文字清晰可见 */
+body.theme-dark .setting-item {
+    background: var(--background-color);
+    border-bottom-color: var(--border-color);
+}
+
+body.theme-dark .setting-item:hover {
+    background: rgba(32, 201, 151, 0.1);
+}
+
+body.theme-dark .setting-text strong {
+    color: var(--text-color);
+}
+
+body.theme-dark .setting-text small {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+body.theme-dark .setting-label .checkmark {
+    background: var(--background-color);
+}
+
+/* 深色主题下设置弹窗标题栏 */
+body.theme-dark .modal-header h3 {
+    color: #fff !important; /* 覆盖 .modal-content h3 的 !important 规则 */
+}
+
+body.theme-dark .modal-close {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+body.theme-dark .modal-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+/* 移动端表格类型选择器 */
+@media (max-width: 768px) {
+    .app-type-selector {
+        flex-direction: column;
+    }
+    .app-type-option {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 10px 14px;
+        min-width: 0;
+        text-align: left;
+    }
+    .app-type-option .app-type-icon {
+        margin-bottom: 0;
+        font-size: 20px;
+    }
+}
+
 .settings-form .button-group {
     display: flex;
     gap: 10px;
@@ -5840,8 +6004,7 @@ body.theme-dark .section-title:hover {
         width: 100%;
         min-width: auto;
     }
-}
-    
+
     /* 确保科目卡片完整显示 */
     .subject-card {
         margin: 6px 0 !important; /* 减少科目卡片间距 */

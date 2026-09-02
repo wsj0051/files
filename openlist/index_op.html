@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>相册幻灯片</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 8px;
+      background: #000;
+      color: #eee;
+      font-family: system-ui;
+    }
+
+    .gallery {
+      column-count: 4;
+      column-gap: 8px;
+    }
+
+    @media (max-width: 1000px) {
+      .gallery {
+        column-count: 3;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .gallery {
+        column-count: 2;
+      }
+    }
+
+    .gallery a {
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 8px;
+      break-inside: avoid;
+    }
+
+    .gallery img {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+      background: #000;
+    }
+
+    .gallery .highlighted {
+      border: 2px solid #fff;
+      border-radius: 8px;
+      animation: highlightFade 1s ease-in-out;
+      /* 淡入动画 */
+    }
+
+    @keyframes highlightFade {
+      from {
+        border-color: rgba(255, 255, 255, 0);
+      }
+
+      to {
+        border-color: #fff;
+      }
+    }
+
+    .pagination {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .pagination button {
+      padding: 5px 10px;
+      margin: 0 5px;
+      background: #333;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    .pagination button.active {
+      background: #888;
+      cursor: not-allowed;
+    }
+
+    /* 播放/暂停按钮优化 - 更紧凑，SVG图标匹配原生风格 */
+    .pswp__button--slideshow {
+      color: #fff;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 4px 8px;
+      /* 减小padding，更紧凑 */
+      opacity: 0.9;
+      margin-right: 8px;
+      cursor: pointer;
+
+    }
+
+    /* 移动端调整位置，避免重叠 */
+    @media (max-width: 600px) {
+      .pswp__button--slideshow {
+        padding: 4px 6px;
+        margin-right: 4px;
+      }
+    }
+
+    /* 修改顶部栏位置：向左移动，避免右上角重叠（调整padding-right增加空间） */
+    .pswp__top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 10px 50px 10px 10px;
+      /* 增加右边padding，避免与AList元素重叠 */
+    }
+
+    /* 新增：工具栏样式，类似第一个代码 */
+    #toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      transition: opacity 0.3s;
+    }
+
+    #toolbar.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #toolbar button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      margin-right: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    #toolbar button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="toolbar">
+    <button id="btnBack">⬅ 返回</button>
+    <button id="btnFullscreen">⛶ 全屏</button>
+    <button onclick="javascript:window.top.location.href='./video_op.html';">自动播放</button>
+
+  </div>
+  <div id="gallery" class="gallery"></div>
+  <div id="pagination" class="pagination"></div>
+
+  <script type="module">
+    // 动态解析当前路径以获取第一个文件夹（firstLevel）
+    let firstLevel = '';
+    let path = '';
+
+    // 在iframe中，优先用window.parent.location（假设同源）
+    if (window.self !== window.top) {
+      try {
+        const parentUrl = new URL(window.parent.location.href);
+        path = parentUrl.pathname;
+        console.log("从parent.location解析的path:", path);
+      } catch (e) {
+        console.error("parent.location访问失败:", e);
+      }
+    }
+
+    // 如果parent失败，用document.referrer
+    if (!path && document.referrer) {
+      try {
+        const referrerUrl = new URL(document.referrer);
+        path = referrerUrl.pathname;
+        console.log("从referrer解析的path:", path);
+      } catch (e) {
+        console.error("referrer解析失败:", e);
+      }
+    }
+
+    // 如果都失败，再用location.pathname
+    if (!path) {
+      path = window.location.pathname;
+      console.log("从location.pathname解析的path:", path);
+    }
+
+    // 解码路径
+    try {
+      path = decodeURIComponent(path);
+    } catch (e) {
+      console.error("路径解码失败:", e);
+    }
+    console.log("解码后的path:", path);
+
+    // 清理路径
+    if (path.startsWith('/p/')) {
+      path = path.substring(3);  // 移除 /p/
+    } else if (path.startsWith('/d/')) {
+      path = path.substring(3);  // 移除 /d/
+    }
+    path = path.replace(/\/[^\/]+\.html$/i, '');  // 移除末尾的/*.html
+    if (path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+    if (path.startsWith('/')) {
+      path = path.slice(1);
+    }
+
+    // 获取第一个文件夹（firstLevel）
+    firstLevel = path.split('/')[0] || '黑红128';  // fallback到默认如果为空
+    console.log("firstLevel:", firstLevel);
+
+    // 动态构建路径
+    const encodedFirstLevel = encodeURIComponent(firstLevel);
+    const cssPath = `/p/${encodedFirstLevel}/.ps/photoswipe.css`;
+    const lightboxPath = `/p/${encodedFirstLevel}/.ps/photoswipe-lightbox.esm.min.js`;
+    const pswpPath = `/p/${encodedFirstLevel}/.ps/photoswipe.esm.min.js`;
+
+    // 动态加载CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = cssPath;
+    document.head.appendChild(link);
+
+    // 动态导入PhotoSwipeLightbox
+    import(lightboxPath).then(({ default: PhotoSwipeLightbox }) => {
+      const SLIDE_INTERVAL = 2000;
+      const IMAGES_PER_PAGE = 20;
+      const PRELOAD_RANGE = 20; // 预加载范围，优化性能
+
+      let allImages = [];
+      let dataSource = [];
+      let currentPage = 1;
+      let lightbox = null;
+      let timer = null;
+      let playing = false;
+      let lastViewedIndex = -1;
+
+      // 新增：构建完整图片URL的函数
+      function buildImageUrl(filename) {
+        let encodedPath = encodeURIComponent(path);
+        if (!encodedPath.endsWith('%2F')) {
+          encodedPath += '%2F';
+        }
+        const encodedFilename = encodeURIComponent(filename);
+        return `/p/${encodedPath}${encodedFilename}`;
+      }
+
+      // ---------- 从 media.json 读取图片 ----------
+      async function loadImagesFromJson() {
+        try {
+          const mediaJsonUrl = buildImageUrl('media.json');
+          console.log("media_json", mediaJsonUrl);
+          const res = await fetch(mediaJsonUrl);
+          if (!res.ok) throw new Error('media.json not found');
+          const jsonData = await res.json();
+
+          // 假设 media.json 是图片路径数组，如 ["image1.jpg", "image2.png", ...]
+          // 如果 JSON 已包含 width/height，可以直接使用 jsonData 作为 dataSource
+          allImages = jsonData.map(item => typeof item === 'string' ? item : item.src);
+          dataSource = allImages.map(filename => {
+            const src = buildImageUrl(filename);
+            return { src, width: 1200, height: 800 };
+          }); // 默认尺寸，后续懒加载真实尺寸
+        } catch (error) {
+          console.error('加载 media.json 失败:', error);
+          // 可添加UI提示，如alert('media.json 加载失败');
+          // 回退到原扫描方式（可选）
+          await scanImages(); // 如果 JSON 失败，回退到目录扫描
+        }
+      }
+
+      // ---------- 原扫描图片函数，作为回退 ----------
+      async function scanImages() {
+        try {
+          const res = await fetch('./');
+          const html = await res.text();
+          const box = document.createElement('div');
+          box.innerHTML = html;
+
+          allImages = [];
+          box.querySelectorAll('a').forEach(a => {
+            const href = a.getAttribute('href');
+            if (href && /\.(jpe?g|png|webp)$/i.test(href)) {
+              allImages.push(decodeURIComponent(href)); // 解码href作为文件名
+            }
+          });
+
+          dataSource = allImages.map(filename => {
+            const src = buildImageUrl(filename);
+            return { src, width: 1200, height: 800 };
+          });
+        } catch (error) {
+          console.error('扫描图片失败:', error);
+        }
+      }
+
+      // ---------- 异步加载图片真实尺寸 - 懒预加载 ----------
+      function preloadImageSize(index) {
+        if (!dataSource[index] || dataSource[index].width !== 1200) return;
+        const img = new Image();
+        img.src = dataSource[index].src;
+        img.onload = () => {
+          if (!dataSource[index]) return;
+          dataSource[index].width = img.naturalWidth;
+          dataSource[index].height = img.naturalHeight;
+          if (lightbox && lightbox.pswp && lightbox.pswp.currIndex === index) {
+            lightbox.pswp.currSlide.zoomTo(lightbox.pswp.currSlide.getZoomLevel(), { animate: false });
+          }
+        };
+      }
+
+      // ---------- 加载分页 ----------
+      function loadImages() {
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = '';
+
+        const start = (currentPage - 1) * IMAGES_PER_PAGE;
+        const end = Math.min(start + IMAGES_PER_PAGE, allImages.length);
+
+        allImages.slice(start, end).forEach((filename, idx) => {
+          const globalIndex = start + idx;
+          const a = document.createElement('a');
+          const src = dataSource[globalIndex].src;
+          a.href = src;
+
+          const img = document.createElement('img');
+          img.src = src;
+          img.loading = 'lazy';
+
+          a.appendChild(img);
+          a.onclick = e => {
+            e.preventDefault();
+            preloadImageSize(globalIndex);
+            lightbox.loadAndOpen(globalIndex, dataSource);
+          };
+
+          gallery.appendChild(a);
+
+          if (globalIndex === lastViewedIndex) {
+            a.classList.add('highlighted');
+          }
+        });
+
+        updatePagination();
+
+        // 懒预加载当前页+范围
+        const preloadStart = Math.max(0, start - PRELOAD_RANGE);
+        const preloadEnd = Math.min(allImages.length, end + PRELOAD_RANGE);
+        for (let i = preloadStart; i < preloadEnd; i++) {
+          preloadImageSize(i);
+        }
+
+        // 滚动到高亮图片（如果存在）
+        scrollToHighlighted();
+      }
+
+      // 新函数：滚动到高亮图片
+      function scrollToHighlighted() {
+        const highlighted = document.querySelector('.gallery .highlighted');
+        if (highlighted) {
+          setTimeout(() => {
+            highlighted.scrollIntoView({
+              behavior: 'smooth', // 平滑滚动
+              block: 'center',    // 垂直居中
+              inline: 'nearest'   // 水平最近
+            });
+          }, 100); // 轻微延迟，确保DOM渲染完成
+        }
+      }
+
+      function updatePagination() {
+        const total = Math.ceil(allImages.length / IMAGES_PER_PAGE);
+        const box = document.getElementById('pagination');
+        box.innerHTML = '';
+
+        for (let i = 1; i <= total; i++) {
+          const b = document.createElement('button');
+          b.textContent = i;
+          if (i === currentPage) b.classList.add('active');
+          b.onclick = () => {
+            currentPage = i;
+            loadImages();
+          };
+          box.appendChild(b);
+        }
+      }
+
+      // ---------- 播放控制 ----------
+      function startSlideshow() {
+        stopSlideshow();
+        const advance = () => {
+          if (!lightbox.pswp || lightbox.pswp.isDestroyed) return;
+
+          const curr = lightbox.pswp.currIndex;
+          const next = (curr + 1) % dataSource.length;
+
+          preloadImageSize(next); // 动态预加载下一张+附近
+          preloadImageSize(next + 1);
+          preloadImageSize(next + 2);
+
+          if (dataSource[next].width === 1200) {
+            setTimeout(advance, 500);
+            return;
+          }
+
+          lightbox.pswp.next();
+          timer = setTimeout(advance, SLIDE_INTERVAL);
+        };
+        advance();
+      }
+
+      function stopSlideshow() {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+      }
+
+      // ---------- 初始化 Lightbox - 只初始化一次 ----------
+      function initLightbox() {
+        lightbox = new PhotoSwipeLightbox({
+          dataSource,
+          pswpModule: () => import(pswpPath),
+          bgOpacity: 1,
+          spacing: 0,
+          showHideAnimationType: 'zoom',
+          zoomAnimationDuration: 200,
+          initialZoomLevel: 'fit',
+          secondaryZoomLevel: 1,
+          maxZoomLevel: 4,
+          closeOnVerticalDrag: false,
+          pinchToClose: false,
+          preload: [3, 3]
+        });
+
+        // ▶ / ⏸ 按钮 - 用SVG替换文本，提升和谐
+        lightbox.on('uiRegister', () => {
+          lightbox.pswp.ui.registerElement({
+            name: 'slideshow',
+            order: 7, // 调整order，更靠左和谐
+            isButton: true,
+            tagName: 'button',
+            appendTo: 'bar',
+            onInit: (el) => {
+              el.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5V19L19 12L8 5Z" fill="currentColor"/></svg>'; // 默认▶
+            },
+            onClick: (e, el) => {
+              playing = !playing;
+              el.innerHTML = playing ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 4H10V20H6V4ZM14 4H18V20H14V4Z" fill="currentColor"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 5V19L19 12L8 5Z" fill="currentColor"/></svg>'; // 切换⏸/▶
+              playing ? startSlideshow() : stopSlideshow();
+            }
+          });
+        });
+
+        lightbox.on('afterInit', () => { playing = false; });
+        lightbox.on('close', () => {
+          stopSlideshow();
+          playing = false;
+          if (lightbox.pswp) {
+            lastViewedIndex = lightbox.pswp.currIndex;
+            currentPage = Math.floor(lastViewedIndex / IMAGES_PER_PAGE) + 1;
+            loadImages();
+          }
+        });
+
+        lightbox.init();
+      }
+
+      // ---------- 空格键控制 ----------
+      document.addEventListener('keydown', e => {
+        if (e.code !== 'Space') return;
+        if (!lightbox || !lightbox.pswp) return;
+        e.preventDefault();
+        playing = !playing;
+        playing ? startSlideshow() : stopSlideshow();
+      });
+
+      // 新增：全屏切换函数，从第一个代码复制
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {
+            console.error('全屏模式不可用');
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      }
+
+      async function init() {
+        await loadImagesFromJson(); // 优先从 JSON 加载
+        initLightbox(); // 只调用一次
+        loadImages(); // 初始加载
+
+        // 新增：工具栏事件
+        const btnBack = document.getElementById('btnBack');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+
+        if (btnBack) {
+          btnBack.addEventListener('click', () => {
+            // 因为在iframe中，使用top返回上级
+            const parentPath = window.top.location.pathname.replace(/\/[^\/]+$/, '');
+            window.top.location.href = parentPath || '/';
+          });
+        }
+
+        if (btnFullscreen) {
+          btnFullscreen.addEventListener('click', toggleFullscreen);
+          document.addEventListener('fullscreenchange', () => {
+            btnFullscreen.textContent = document.fullscreenElement ? '⛶ 退出全屏' : '⛶ 全屏';
+          });
+        }
+      }
+
+      init();
+    }).catch(error => {
+      console.error('加载 PhotoSwipeLightbox 失败:', error);
+    });
+   
+  </script>
+</body>
+
+</html>

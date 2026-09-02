@@ -214,7 +214,7 @@
                 
                 <div class="subject-pool">
                     <!-- 科目池主标题 -->
-                    <h3 class="section-title">科目池</h3>
+                    <h3 class="section-title" id="subjectPoolTitle">科目池</h3>
                     <div class="subject-pool-header">
                         <button id="importSubjectBtn" class="btn secondary">导入科目</button>
                         <button id="addSubjectBtn" class="btn primary">+ 科目</button>
@@ -260,15 +260,15 @@
     <!-- 科目编辑弹窗 -->
     <div id="subjectModal" class="modal">
         <div class="modal-content">
-            <h3>科目设置</h3>
+            <h3 id="subjectModalTitle">科目设置</h3>
             <form id="subjectForm">
                 <div class="form-group">
-                    <label>科目名称</label>
-                    <input type="text" id="subjectName" required>
+                    <label id="subjectNameLabel">科目名称</label>
+                    <input type="text" id="subjectName" placeholder="请输入科目名称" required>
                 </div>
                 <div class="form-group">
-                    <label>老师姓名</label>
-                    <input type="text" id="teacherName" placeholder="可选">
+                    <label id="teacherNameLabel">老师姓名</label>
+                    <input type="text" id="teacherName" placeholder="请输入老师姓名（可选）">
                 </div>
                 <div class="form-group">
                     <label>颜色</label>
@@ -438,6 +438,35 @@
                                 <small>在课时列中显示开始和结束时间</small>
                             </div>
                         </label>
+                    </div>
+
+                    <div class="setting-item app-type-setting">
+                        <div class="setting-label" style="cursor: default;">
+                            <div class="setting-text">
+                                <strong>表格类型</strong>
+                                <small>课程表（科目+老师）· 班级课表（班级+备注）· 通用表格（名称+备注）</small>
+                            </div>
+                        </div>
+                        <div class="app-type-selector">
+                            <label class="app-type-option" data-type="course">
+                                <input type="radio" name="appType" value="course">
+                                <span class="app-type-icon">📚</span>
+                                <span class="app-type-name">课程表</span>
+                                <span class="app-type-desc">科目 + 老师</span>
+                            </label>
+                            <label class="app-type-option" data-type="class">
+                                <input type="radio" name="appType" value="class">
+                                <span class="app-type-icon">🏫</span>
+                                <span class="app-type-name">班级课表</span>
+                                <span class="app-type-desc">班级 + 备注</span>
+                            </label>
+                            <label class="app-type-option" data-type="generic">
+                                <input type="radio" name="appType" value="generic">
+                                <span class="app-type-icon">📋</span>
+                                <span class="app-type-name">通用表格</span>
+                                <span class="app-type-desc">名称 + 备注</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 

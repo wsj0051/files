@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>家庭相册</title>
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  transition: opacity 0.3s;
+}
+
+#toolbar.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#toolbar button {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+#toolbar button:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+#status {
+  margin-left: auto;
+  font-size: 13px;
+  opacity: .8;
+}
+
+#playerContainer {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+#image, #video, #audio {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: none;
+}
+
+#audio {
+  position: absolute;
+  bottom: 60px; /* 避免与counter重叠 */
+  width: 80%;
+}
+
+#counter {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0,0,0,.6);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+#loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 16px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#errorMsg {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: #c62828;
+  padding: 14px;
+  border-radius: 10px;
+  display: none;
+  z-index: 1000;
+}
+
+#progressContainer {
+  position: fixed;
+  bottom: 80px;
+  left: 20px;
+  right: 20px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 10px;
+  padding: 10px;
+  display: none;
+  z-index: 999;
+}
+
+#progressBar {
+  width: 0%;
+  height: 4px;
+  background: #4CAF50;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+#fallbackVideo {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.8);
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  display: none;
+  z-index: 1001;
+}
+
+#fallbackVideo button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 5px;
+}
+
+#fallbackVideo button:hover {
+  background: #45a049;
+}
+</style>
+</head>
+
+<body>
+
+<div id="toolbar">
+  <button id="btnBack">⬅ 返回</button>
+  <button id="btnPrev">⏮ 上一个</button>
+  <button id="btnPlay">⏸ 暂停</button>
+  <button id="btnNext">⏭ 下一个</button>
+  <button id="btnFullscreen">⛶ 全屏</button>
+  <span id="status">初始化中…</span>
+</div>
+
+<div id="playerContainer">
+  <img id="image" alt="图片" crossorigin="anonymous">
+  <video id="video" crossorigin="anonymous" preload="auto" playsinline></video>
+  <audio id="audio" crossorigin="anonymous" preload="auto"></audio>
+</div>
+
+<div id="fallbackVideo">
+  <p>视频格式可能不被支持，尝试以下选项：</p>
+  <button id="btnTryAgain">重试加载</button>
+  <button id="btnSkipVideo">跳过此视频</button>
+  <button id="btnDownload">下载视频</button>
+</div>
+
+<div id="progressContainer">
+  <div id="progressBar"></div>
+  <div id="progressText" style="font-size: 12px; margin-top: 5px; text-align: center;">正在加载...</div>
+</div>
+
+<div id="counter"></div>
+<div id="loading">
+  <div class="spinner"></div><br>
+  正在加载相册…
+</div>
+<div id="errorMsg"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ========= OpenList配置 =========
+  const urlParams = new URLSearchParams(window.location.search);
+  const hash = window.location.hash;
+  console.log("hash:", hash);
+  console.log("urlParams:", urlParams);
+
+  let params = urlParams;
+  if (urlParams.size === 0 && hash.startsWith('#?')) {
+    params = new URLSearchParams(hash.substring(2));
+    console.log("使用hash参数:", params);
+  }
+
+  let server = params.get('server') || window.location.origin;
+  let albumPath = params.get('path') || '';
+
+  if (!albumPath) {
+    let path = '';
+    
+    if (window.self !== window.top) {
+      try {
+        const parentUrl = new URL(window.parent.location.href);
+        path = parentUrl.pathname;
+        server = parentUrl.origin;
+        console.log("从parent.location解析的path:", path);
+      } catch (e) {
+        console.error("parent.location访问失败:", e);
+      }
+    }
+    
+    if (!path && document.referrer) {
+      try {
+        const referrerUrl = new URL(document.referrer);
+        path = referrerUrl.pathname;
+        server = referrerUrl.origin;
+        console.log("从referrer解析的path:", path);
+      } catch (e) {
+        console.error("referrer解析失败:", e);
+      }
+    }
+    
+    if (!path) {
+      path = window.location.pathname;
+      console.log("从location.pathname解析的path:", path);
+    }
+    
+    try {
+      path = decodeURIComponent(path);
+    } catch (e) {
+      console.error("路径解码失败:", e);
+    }
+    console.log("解码后的path:", path);
+    
+    if (path.startsWith('/p/')) {
+      path = path.substring(3);
+    } else if (path.startsWith('/d/')) {
+      path = path.substring(3);
+    }
+    
+    path = path.replace(/\/[^\/]+\.html$/i, '');
+    if (path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+    if (path.startsWith('/')) {
+      path = path.slice(1);
+    }
+    
+    if (path === 'srcdoc' || path === 'about:srcdoc' || !path) {
+      path = '黑红128/media/Photos/WeddingPhoto/照片';
+      console.warn("路径解析为srcdoc或空，使用默认albumPath:", path);
+    }
+    
+    albumPath = path;
+    console.log("最终albumPath:", albumPath);
+  }
+
+  const CONFIG = {
+    SERVER: server,
+    ALBUM_PATH: albumPath,
+    MEDIA_JSON: params.get('media_json') || 'media.json',
+    IMAGE_DURATION: parseInt(params.get('duration')) || 5000,
+    TOOLBAR_HIDE_DELAY: 3000
+  };
+  
+  // ========= DOM元素 =========
+  const image = document.getElementById('image');
+  const video = document.getElementById('video');
+  const audio = document.getElementById('audio');
+  const status = document.getElementById('status');
+  const counter = document.getElementById('counter');
+  const loading = document.getElementById('loading');
+  const errorMsg = document.getElementById('errorMsg');
+  const toolbar = document.getElementById('toolbar');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  const fallbackVideo = document.getElementById('fallbackVideo');
+  
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+  const btnPlay = document.getElementById('btnPlay');
+  const btnBack = document.getElementById('btnBack');
+  const btnFullscreen = document.getElementById('btnFullscreen');
+  const btnTryAgain = document.getElementById('btnTryAgain');
+  const btnSkipVideo = document.getElementById('btnSkipVideo');
+  const btnDownload = document.getElementById('btnDownload');
+  
+  // ========= 状态变量 =========
+  let list = [];
+  let index = 0;
+  let playing = true;
+  let timer = null;
+  let hideToolbarTimer = null;
+  let isToolbarVisible = true;
+  let currentMediaElement = null;
+  let currentMediaIndex = -1;
+  let mediaTimeout = null;
+  let progressTimeout = null;
+  let currentMediaUrl = null;
+  let videoRetryCount = 0;
+  const MAX_RETRY_COUNT = 3;
+  
+  // ========= 工具函数 =========
+  function showError(msg) {
+    if (errorMsg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+      setTimeout(() => {
+        errorMsg.style.display = 'none';
+      }, 3000);
+    }
+  }
+  
+  function updateStatus(text) {
+    if (status) {
+      status.textContent = text;
+    }
+  }
+  
+  function showProgress(text = "正在加载...") {
+    if (progressContainer && progressBar && progressText) {
+      progressText.textContent = text;
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+    }
+  }
+  
+  function hideProgress() {
+    if (progressContainer) {
+      progressContainer.style.display = 'none';
+      clearTimeout(progressTimeout);
+    }
+  }
+  
+  function updateProgress(percent, text = "正在加载...") {
+    if (progressContainer && progressBar && progressText) {
+      progressBar.style.width = percent + '%';
+      progressText.textContent = text;
+    }
+  }
+  
+  function showFallbackVideo() {
+    if (fallbackVideo) {
+      fallbackVideo.style.display = 'block';
+    }
+  }
+  
+  function hideFallbackVideo() {
+    if (fallbackVideo) {
+      fallbackVideo.style.display = 'none';
+    }
+  }
+  
+  // ========= 媒体类型检测 =========
+  function getMediaType(filename) {
+    const ext = filename.toLowerCase().split('.').pop();
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'tiff'].includes(ext)) {
+      return 'image';
+    } else if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'm4v', '3gp', 'm4v', 'mpg', 'mpeg'].includes(ext)) {
+      return 'video';
+    } else if (['mp3', 'wav', 'ogg', 'aac', 'm4a', 'flac', 'wma', 'aiff', 'alac', 'opus'].includes(ext)) {
+      return 'audio';
+    }
+    return 'unknown';
+  }
+  
+  // ========= MIME类型映射 =========
+  function getMimeType(filename) {
+    const ext = filename.toLowerCase().split('.').pop();
+    const mimeMap = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'bmp': 'image/bmp',
+      'webp': 'image/webp',
+      'svg': 'image/svg+xml',
+      'tiff': 'image/tiff',
+      'mp4': 'video/mp4',
+      'webm': 'video/webm',
+      'ogg': 'video/ogg',
+      'mov': 'video/quicktime',
+      'avi': 'video/x-msvideo',
+      'mkv': 'video/x-matroska',
+      'flv': 'video/x-flv',
+      'wmv': 'video/x-ms-wmv',
+      'm4v': 'video/mp4',
+      '3gp': 'video/3gpp',
+      'mpg': 'video/mpeg',
+      'mpeg': 'video/mpeg',
+      'mp3': 'audio/mpeg',
+      'wav': 'audio/wav',
+      'ogg': 'audio/ogg',
+      'aac': 'audio/aac',
+      'm4a': 'audio/mp4',
+      'flac': 'audio/flac',
+      'wma': 'audio/x-ms-wma',
+      'aiff': 'audio/aiff',
+      'alac': 'audio/alac',
+      'opus': 'audio/opus'
+    };
+    return mimeMap[ext] || 'application/octet-stream';
+  }
+  
+  // ========= 获取raw_url =========
+  async function getRawUrl(filename) {
+    const apiUrl = `${CONFIG.SERVER}/api/fs/get`;
+    const fullPath = `/${CONFIG.ALBUM_PATH}/${filename}`;
+    
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: fullPath })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API错误: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (!data || !data.data || !data.data.raw_url) {
+        console.warn(`No raw_url in API response for ${filename}, falling back to /d/`);
+        return buildMediaUrl(filename);
+      }
+      return data.data.raw_url;
+    } catch (error) {
+      console.error(`获取raw_url失败 for ${filename}:`, error);
+      return buildMediaUrl(filename);
+    }
+  }
+  
+  // ========= OpenList URL构建函数 =========
+  function buildJsonUrl(filename) {
+    let encodedPath = CONFIG.ALBUM_PATH.split('/').map(encodeURIComponent).join('/');
+    if (!encodedPath.endsWith('/')) {
+      encodedPath += '/';
+    }
+    const encodedFilename = encodeURIComponent(filename);
+    
+    return `${CONFIG.SERVER}/p/${encodedPath}${encodedFilename}`;
+  }
+  
+  function buildMediaUrl(filename) {
+    let encodedPath = CONFIG.ALBUM_PATH.split('/').map(encodeURIComponent).join('/');
+    if (!encodedPath.endsWith('/')) {
+      encodedPath += '/';
+    }
+    const encodedFilename = encodeURIComponent(filename);
+    
+    return `${CONFIG.SERVER}/d/${encodedPath}${encodedFilename}`;
+  }
+  
+  // ========= 加载media.json =========
+  async function loadMediaJson() {
+    const jsonUrl = buildJsonUrl(CONFIG.MEDIA_JSON);
+    
+    try {
+      const response = await fetch(jsonUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP错误: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const mediaFiles = Array.isArray(data) ? data : data.images || data.files || [];
+      
+      if (mediaFiles.length === 0) {
+        throw new Error('media.json中没有媒体列表');
+      }
+      
+      return mediaFiles;
+      
+    } catch (error) {
+      showError(`加载media.json失败: ${error.message}`);
+      return [];
+    }
+  }
+  
+  // ========= 加载媒体列表 =========
+  async function loadList() {
+    try {
+      const mediaFiles = await loadMediaJson();
+      
+      if (mediaFiles.length === 0) {
+        throw new Error('没有找到任何媒体');
+      }
+      
+      const validMediaFiles = mediaFiles.filter(filename => getMediaType(filename) !== 'unknown');
+      
+      const rawUrls = await Promise.all(
+        validMediaFiles.map(filename => getRawUrl(filename))
+      );
+      
+      const mediaList = validMediaFiles.map((filename, idx) => {
+        const url = rawUrls[idx];
+        const type = getMediaType(filename);
+        
+        return {
+          id: idx,
+          name: filename,
+          url: url,
+          type: type,
+          ext: filename.toLowerCase().split('.').pop()
+        };
+      });
+      
+      return mediaList;
+      
+    } catch (error) {
+      showError('创建媒体列表失败');
+      return [];
+    }
+  }
+  
+  // ========= 检测浏览器支持的视频格式 =========
+  function checkVideoSupport() {
+    const video = document.createElement('video');
+    const canPlayMov = video.canPlayType('video/quicktime');
+    const canPlayMp4 = video.canPlayType('video/mp4');
+    
+    console.log('浏览器支持检测:');
+    console.log('- MOV/QuickTime:', canPlayMov);
+    console.log('- MP4:', canPlayMp4);
+    
+    return {
+      mov: canPlayMov === 'probably' || canPlayMov === 'maybe',
+      mp4: canPlayMp4 === 'probably' || canPlayMp4 === 'maybe'
+    };
+  }
+  
+  // ========= 处理MOV文件 =========
+  function setupVideoForMov(filename, video, url) {
+    const ext = filename.toLowerCase().split('.').pop();
+    const videoSupport = checkVideoSupport();
+    
+    console.log(`处理${ext.toUpperCase()}文件: ${filename}`);
+    console.log('浏览器支持情况:', videoSupport);
+    
+    // 移除旧的source元素
+    while (video.firstChild) {
+      video.removeChild(video.firstChild);
+    }
+    
+    // 尝试多种MIME类型
+    const mimeTypes = [
+      { type: 'video/quicktime', ext: 'mov' },
+      { type: 'video/mp4', ext: 'mp4' },
+      { type: 'video/x-m4v', ext: 'm4v' },
+      { type: 'video/avi', ext: 'avi' }
+    ];
+    
+    // 为MOV文件添加多个source，提高兼容性
+    mimeTypes.forEach(mime => {
+      const source = document.createElement('source');
+      source.src = url;
+      source.type = mime.type;
+      video.appendChild(source);
+      console.log(`添加source: type=${mime.type}`);
+    });
+    
+    // 如果浏览器可能不支持MOV，添加一个警告
+    if (ext === 'mov' && !videoSupport.mov) {
+      console.warn('浏览器可能不支持MOV格式，尝试使用MP4 MIME类型');
+    }
+    
+    return video;
+  }
+  
+  // ========= 媒体播放控制 =========
+  function playCurrent() {
+    clearTimeout(timer);
+    clearTimeout(mediaTimeout);
+    hideProgress();
+    hideFallbackVideo();
+    videoRetryCount = 0;
+    
+    if (currentMediaElement) {
+        if (typeof currentMediaElement.pause === 'function') {
+            currentMediaElement.pause();
+        }
+    }
+    
+    if (!list || list.length === 0) {
+      showError('没有可播放的媒体');
+      return;
+    }
+    
+    if (index < 0) index = list.length - 1;
+    if (index >= list.length) index = 0;
+    
+    currentMediaIndex = index;
+    
+    const media = list[index];
+    updateStatus(`${media.name} (${index + 1}/${list.length})`);
+    
+    if (counter) {
+      counter.textContent = `${index + 1} / ${list.length}`;
+    }
+    
+    // 隐藏所有媒体元素
+    image.style.display = 'none';
+    video.style.display = 'none';
+    audio.style.display = 'none';
+    video.innerHTML = '';
+    audio.innerHTML = '';
+    image.src = '';
+    
+    const timestamp = Date.now();
+    currentMediaUrl = `${media.url}${media.url.includes('?') ? '&' : '?'}t=${timestamp}`;
+    
+    // 设置加载超时 - 增加视频超时时间
+    const timeoutDuration = media.type === 'video' ? 45000 : media.type === 'audio' ? 20000 : 10000;
+    
+    mediaTimeout = setTimeout(() => {
+        if (currentMediaIndex === index) {
+            console.log(`加载超时: ${media.name} (${timeoutDuration/1000}秒)`);
+            
+            if (media.type === 'video') {
+                if (videoRetryCount < MAX_RETRY_COUNT) {
+                    videoRetryCount++;
+                    console.log(`尝试第${videoRetryCount}次重试`);
+                    showError(`视频加载缓慢，正在重试 (${videoRetryCount}/${MAX_RETRY_COUNT})`);
+                    clearTimeout(mediaTimeout);
+                    loadVideoWithRetry(media, currentMediaUrl);
+                } else {
+                    showError(`视频加载失败: ${media.name}`);
+                    showFallbackVideo();
+                }
+            } else {
+                showError(`加载失败: ${media.name}`);
+                next();
+            }
+        }
+    }, timeoutDuration);
+    
+    switch (media.type) {
+        case 'image':
+            loadImage(media, currentMediaUrl);
+            break;
+            
+        case 'video':
+            loadVideo(media, currentMediaUrl);
+            break;
+            
+        case 'audio':
+            loadAudio(media, currentMediaUrl);
+            break;
+    }
+  }
+  
+  // ========= 加载图片 =========
+  function loadImage(media, url) {
+    currentMediaElement = image;
+    image.dataset.mediaIndex = currentMediaIndex;
+    
+    const imageLoadHandler = function() {
+        if (parseInt(image.dataset.mediaIndex) === currentMediaIndex) {
+            clearTimeout(mediaTimeout);
+            hideProgress();
+            image.style.display = 'block';
+            if (playing) {
+                timer = setTimeout(next, CONFIG.IMAGE_DURATION);
+            }
+        }
+    };
+    
+    const imageErrorHandler = function() {
+        if (parseInt(image.dataset.mediaIndex) === currentMediaIndex) {
+            clearTimeout(mediaTimeout);
+            hideProgress();
+            showError(`图片加载失败: ${media.name}`);
+            next();
+        }
+    };
+    
+    image.onload = null;
+    image.onerror = null;
+    image.onload = imageLoadHandler;
+    image.onerror = imageErrorHandler;
+    
+    image.crossOrigin = "anonymous";
+    showProgress(`正在加载图片: ${media.name}`);
+    image.src = url;
+  }
+  
+  // ========= 加载视频 =========
+  function loadVideo(media, url) {
+    currentMediaElement = video;
+    video.dataset.mediaIndex = currentMediaIndex;
+    
+    // 清除所有事件监听器
+    const eventTypes = ['error', 'loadeddata', 'ended', 'progress', 'canplay', 'canplaythrough', 'stalled', 'suspend'];
+    eventTypes.forEach(eventType => {
+        video['on' + eventType] = null;
+    });
+    
+    // 特殊处理MOV文件
+    if (media.ext === 'mov') {
+        setupVideoForMov(media.name, video, url);
+    } else {
+        // 移除旧的source元素
+        while (video.firstChild) {
+            video.removeChild(video.firstChild);
+        }
+        
+        const source = document.createElement('source');
+        source.src = url;
+        source.type = getMimeType(media.name);
+        video.appendChild(source);
+    }
+    
+    const videoErrorHandler = function(e) {
+        console.error('视频加载错误:', e);
+        if (parseInt(video.dataset.mediaIndex) === currentMediaIndex) {
+            clearTimeout(mediaTimeout);
+            hideProgress();
+            
+            if (videoRetryCount < MAX_RETRY_COUNT) {
+                videoRetryCount++;
+                console.log(`视频加载错误，尝试第${videoRetryCount}次重试`);
+                showError(`视频加载错误，正在重试 (${videoRetryCount}/${MAX_RETRY_COUNT})`);
+                loadVideoWithRetry(media, url);
+            } else {
+                showError(`视频加载失败: ${media.name} (错误: ${e.target.error ? e.target.error.code : '未知'})`);
+                showFallbackVideo();
+            }
+        }
+    };
+    
+    const videoProgressHandler = function() {
+        if (parseInt(video.dataset.mediaIndex) === currentMediaIndex && video.buffered.length > 0) {
+            const buffered = video.buffered.end(0);
+            const duration = video.duration;
+            if (duration > 0) {
+                const percent = Math.min(100, (buffered / duration) * 100);
+                updateProgress(percent, `正在加载视频: ${Math.round(percent)}%`);
+            } else {
+                updateProgress(30, `正在加载视频元数据...`);
+            }
+        }
+    };
+    
+    const videoCanPlayHandler = function() {
+        if (parseInt(video.dataset.mediaIndex) === currentMediaIndex) {
+            updateProgress(80, "视频准备播放...");
+        }
+    };
+    
+    const videoLoadedHandler = function() {
+        if (parseInt(video.dataset.mediaIndex) === currentMediaIndex) {
+            clearTimeout(mediaTimeout);
+            updateProgress(100, "视频加载完成");
+            setTimeout(() => {
+                hideProgress();
+                video.style.display = 'block';
+                if (playing) {
+                    video.play().catch(e => {
+                        console.error('视频播放失败:', e);
+                        showError(`视频播放失败: ${e.message}`);
+                        next();
+                    });
+                }
+            }, 300);
+        }
+    };
+    
+    const videoEndedHandler = function() {
+        if (parseInt(video.dataset.mediaIndex) === currentMediaIndex) {
+            next();
+        }
+    };
+    
+    video.onerror = videoErrorHandler;
+    video.onloadeddata = videoLoadedHandler;
+    video.onended = videoEndedHandler;
+    video.onprogress = videoProgressHandler;
+    video.oncanplay = videoCanPlayHandler;
+    video.oncanplaythrough = videoCanPlayHandler;
+    
+    // 设置视频属性
+    video.preload = 'auto';
+    video.playsInline = true;
+    video.controls = false; // 隐藏原生控件
+    
+    showProgress(`正在加载视频: ${media.name}`);
+    video.load();
+  }
+  
+  // ========= 带重试的视频加载 =========
+  function loadVideoWithRetry(media, url) {
+    clearTimeout(mediaTimeout);
+    hideProgress();
+    
+    // 设置重试超时
+    const retryTimeout = 10000; // 重试超时10秒
+    
+    mediaTimeout = setTimeout(() => {
+        if (videoRetryCount >= MAX_RETRY_COUNT) {
+            showError(`视频加载失败: ${media.name}`);
+            showFallbackVideo();
+        } else {
+            loadVideoWithRetry(media, url);
+        }
+    }, retryTimeout);
+    
+    // 使用新的URL（添加不同的时间戳避免缓存）
+    const retryUrl = `${url.split('?')[0]}?t=${Date.now() + videoRetryCount}`;
+    console.log(`重试加载视频: ${retryUrl}`);
+    
+    loadVideo(media, retryUrl);
+  }
+  
+  // ========= 加载音频 =========
+  function loadAudio(media, url) {
+    currentMediaElement = audio;
+    audio.dataset.mediaIndex = currentMediaIndex;
+    
+    // 清除旧的事件监听器
+    audio.onerror = null;
+    audio.onloadeddata = null;
+    audio.onended = null;
+    audio.onprogress = null;
+    audio.oncanplaythrough = null;
+    
+    const audioSource = document.createElement('source');
+    audioSource.src = url;
+    audioSource.type = getMimeType(media.name);
+    
+    while (audio.firstChild) {
+        audio.removeChild(audio.firstChild);
+    }
+    
+    audio.appendChild(audioSource);
+    
+    const audioErrorHandler = function() {
+        if (parseInt(audio.dataset.mediaIndex) === currentMediaIndex) {
+            clearTimeout(mediaTimeout);
+            hideProgress();
+            showError(`音频加载失败: ${media.name}`);
+            next();
+        }
+    };
+    
+    const audioProgressHandler = function() {
+        if (parseInt(audio.dataset.mediaIndex) === currentMediaIndex && audio.buffered.length > 0) {
+            const buffered = audio.buffered.end(0);
+            const duration = audio.duration;
+            if (duration > 0) {
+                const percent = Math.min(100, (buffered / duration) * 100);
+                updateProgress(percent, `正在加载音频: ${Math.round(percent)}%`);
+            }
+        }
+    };
+    
+    const audioLoadedHandler = function() {
+        if (parseInt(audio.dataset.mediaIndex) === currentMediaIndex) {
+            clearTimeout(mediaTimeout);
+            updateProgress(100, "音频加载完成");
+            audio.style.display = 'block';
+            if (playing) {
+                audio.play().catch(e => {
+                    showError(`音频播放失败: ${e.message}`);
+                    next();
+                });
+            }
+        }
+    };
+    
+    const audioEndedHandler = function() {
+        if (parseInt(audio.dataset.mediaIndex) === currentMediaIndex) {
+            next();
+        }
+    };
+    
+    audio.onerror = audioErrorHandler;
+    audio.onloadeddata = audioLoadedHandler;
+    audio.onended = audioEndedHandler;
+    audio.onprogress = audioProgressHandler;
+    
+    showProgress(`正在加载音频: ${media.name}`);
+    audio.load();
+  }
+  
+  // ========= 导航控制 =========
+  function next() {
+    clearTimeout(timer);
+    clearTimeout(mediaTimeout);
+    hideProgress();
+    hideFallbackVideo();
+    index++;
+    playCurrent();
+  }
+  
+  function prev() {
+    clearTimeout(timer);
+    clearTimeout(mediaTimeout);
+    hideProgress();
+    hideFallbackVideo();
+    index--;
+    playCurrent();
+  }
+  
+  function togglePlay() {
+    playing = !playing;
+    
+    if (btnPlay) {
+      btnPlay.textContent = playing ? '⏸ 暂停' : '▶ 播放';
+    }
+    
+    if (currentMediaElement) {
+      const currentIndex = parseInt(currentMediaElement.dataset.mediaIndex || -1);
+      
+      if (currentIndex === currentMediaIndex) {
+        if (playing) {
+          if (currentMediaElement.tagName === 'IMG') {
+            if (image.style.display === 'block') {
+              timer = setTimeout(next, CONFIG.IMAGE_DURATION);
+            }
+          } else {
+            currentMediaElement.play();
+          }
+        } else {
+          clearTimeout(timer);
+          if (currentMediaElement.tagName !== 'IMG') {
+            currentMediaElement.pause();
+          }
+        }
+      }
+    }
+  }
+  
+  // ========= 工具栏控制 =========
+  function showToolbar() {
+    if (!isToolbarVisible) {
+      toolbar.classList.remove('hidden');
+      isToolbarVisible = true;
+    }
+    
+    clearTimeout(hideToolbarTimer);
+    hideToolbarTimer = setTimeout(() => {
+      toolbar.classList.add('hidden');
+      isToolbarVisible = false;
+    }, CONFIG.TOOLBAR_HIDE_DELAY);
+  }
+  
+  function toggleFullscreen() {
+    const container = document.getElementById('playerContainer');
+    if (!container) return;
+    
+    if (!document.fullscreenElement) {
+      container.requestFullscreen().catch(() => {
+        showError('全屏模式不可用');
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }
+  
+  // ========= 事件监听 =========
+  if (btnPrev) btnPrev.addEventListener('click', prev);
+  if (btnNext) btnNext.addEventListener('click', next);
+  if (btnPlay) btnPlay.addEventListener('click', togglePlay);
+  if (btnBack) btnBack.addEventListener('click', () => window.history.back());
+  if (btnFullscreen) btnFullscreen.addEventListener('click', toggleFullscreen);
+  
+  // 备用视频按钮事件
+  if (btnTryAgain) {
+    btnTryAgain.addEventListener('click', function() {
+        hideFallbackVideo();
+        const media = list[currentMediaIndex];
+        videoRetryCount = 0;
+        loadVideoWithRetry(media, currentMediaUrl);
+    });
+  }
+  
+  if (btnSkipVideo) {
+    btnSkipVideo.addEventListener('click', function() {
+        hideFallbackVideo();
+        next();
+    });
+  }
+  
+  if (btnDownload) {
+    btnDownload.addEventListener('click', function() {
+        const media = list[currentMediaIndex];
+        const a = document.createElement('a');
+        a.href = currentMediaUrl;
+        a.download = media.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    });
+  }
+  
+  document.addEventListener('mousemove', showToolbar);
+  document.addEventListener('touchstart', showToolbar);
+  
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('#toolbar') || e.target.closest('#fallbackVideo')) return;
+    
+    const clickX = e.clientX || (e.touches && e.touches[0].clientX);
+    if (clickX > window.innerWidth / 2) {
+      next();
+    } else {
+      prev();
+    }
+  });
+  
+  document.addEventListener('keydown', function(e) {
+    switch (e.key) {
+      case ' ':
+      case 'Spacebar':
+        e.preventDefault();
+        togglePlay();
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        prev();
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        next();
+        break;
+      case 'Escape':
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        }
+        break;
+    }
+  });
+  
+  document.addEventListener('fullscreenchange', function() {
+    if (btnFullscreen) {
+      btnFullscreen.textContent = document.fullscreenElement ? '⛶ 退出全屏' : '⛶ 全屏';
+    }
+  });
+  
+  // ========= 初始化应用 =========
+  async function initApp() {
+    try {
+      list = await loadList();
+      
+      if (!list || list.length === 0) {
+        throw new Error('没有找到任何媒体');
+      }
+      
+      if (loading) {
+        loading.style.display = 'none';
+      }
+      
+      // 检测浏览器视频支持
+      checkVideoSupport();
+      
+      playCurrent();
+      showToolbar();
+      
+    } catch (error) {
+      if (loading) {
+        loading.style.display = 'none';
+      }
+      
+      showError(`初始化失败: ${error.message}`);
+    }
+  }
+  
+  initApp();
+});
+</script>
+</body>
+</html>

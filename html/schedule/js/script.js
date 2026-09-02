@@ -28,12 +28,14 @@ class TimetableApp {
             showEvening: true,
             showSaturday: true,
             showSunday: true,
-            showPeriodTime: true
+            showPeriodTime: true,
+            appType: 'course'
         };
         this.editingSubject = null;
         this.editingCell = null;
         this.editingPeriod = null;
         this.draggedSubject = null;
+        this.tableTitleCustom = false;
         
         this.init();
     }
@@ -47,6 +49,7 @@ class TimetableApp {
         this.loadTimetableTitle();
         this.loadTableTitle();
         this.applySettings();
+        this.applyLabels();
     }
 
     bindEvents() {
@@ -350,6 +353,7 @@ class TimetableApp {
 
     openSubjectModal(subject = null) {
         this.editingSubject = subject;
+        this.applyLabels();
         const modal = document.getElementById('subjectModal');
         const nameInput = document.getElementById('subjectName');
         const teacherInput = document.getElementById('teacherName');
@@ -519,7 +523,7 @@ class TimetableApp {
         this.closeImportSubjectModal();
         
         // 显示成功提示
-        this.showNotification('科目导入成功！', 'success');
+        this.showNotification(this.getLabels().importSuccess, 'success');
     }
 
     saveSubject(e) {
@@ -745,6 +749,7 @@ class TimetableApp {
     generateTutorialContent() {
         const tutorialContent = document.getElementById('tutorialContent');
         if (!tutorialContent) return;
+        const L = this.getLabels();
     
         const content = `
             <div class="tutorial-section">
@@ -758,8 +763,8 @@ class TimetableApp {
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
                         </div>
                         <div class="tutorial-card-content">
-                            <strong>添加科目</strong>
-                            <span>点击“+ 科目”按钮创建课程</span>
+                            <strong>${L.tutorialAddTitle}</strong>
+                            <span>${L.tutorialAddDesc}</span>
                         </div>
                     </div>
                     <div class="tutorial-card">
@@ -777,7 +782,7 @@ class TimetableApp {
                         </div>
                         <div class="tutorial-card-content">
                             <strong>拖拽排课</strong>
-                            <span>将科目拖到课程表对应位置</span>
+                            <span>${L.tutorialDragDesc}</span>
                         </div>
                     </div>
                     <div class="tutorial-card">
@@ -940,11 +945,105 @@ class TimetableApp {
         showSundayCheckbox.checked = this.settings.showSunday;
         showPeriodTimeCheckbox.checked = this.settings.showPeriodTime;
 
+        // 初始化表格类型单选按钮组
+        const appTypeRadios = document.querySelectorAll('input[name="appType"]');
+        const currentType = this.settings.appType || 'course';
+        appTypeRadios.forEach(radio => {
+            radio.checked = (radio.value === currentType);
+            if (!radio.dataset.bound) {
+                radio.addEventListener('change', () => this.updateAppTypeHighlight());
+                radio.dataset.bound = '1';
+            }
+        });
+        this.updateAppTypeHighlight();
+
         modal.style.display = 'flex';
+    }
+
+    // 更新表格类型选项的高亮状态
+    updateAppTypeHighlight() {
+        document.querySelectorAll('.app-type-option').forEach(option => {
+            const radio = option.querySelector('input[type="radio"]');
+            option.classList.toggle('active', !!(radio && radio.checked));
+        });
     }
 
     closeSettingsModal() {
         document.getElementById('settingsModal').style.display = 'none';
+    }
+
+    // 根据表格类型返回所有界面文案
+    getLabels() {
+        const type = this.settings.appType || 'course';
+        const labels = {
+            course: {
+                main: '科目', sub: '老师',
+                poolTitle: '科目池', addMainBtn: '+ 科目', importBtn: '导入科目',
+                modalTitle: '科目设置', mainFieldLabel: '科目名称', subFieldLabel: '老师姓名',
+                mainPlaceholder: '请输入科目名称', subPlaceholder: '请输入老师姓名（可选）',
+                selectMain: '选择科目', searchPlaceholder: '搜索科目或老师...',
+                notFound: '未找到匹配的科目', emptyText: '暂无科目，请先添加科目',
+                addMain: '添加科目', addNewMain: '添加新科目', noSub: '暂无老师',
+                addMainHint: '请点击左侧「+ 科目」按钮开始添加科目',
+                dragHint: '请从上方科目池中拖拽科目到课程表中',
+                tutorialAddTitle: '添加科目', tutorialAddDesc: '点击“+ 科目”按钮创建课程',
+                tutorialDragDesc: '将科目拖到课程表对应位置',
+                importSuccess: '科目导入成功！'
+            },
+            class: {
+                main: '班级', sub: '备注',
+                poolTitle: '班级池', addMainBtn: '+ 班级', importBtn: '导入班级',
+                modalTitle: '班级设置', mainFieldLabel: '班级名称', subFieldLabel: '备注',
+                mainPlaceholder: '请输入班级名称', subPlaceholder: '请输入备注（可选）',
+                selectMain: '选择班级', searchPlaceholder: '搜索班级或备注...',
+                notFound: '未找到匹配的班级', emptyText: '暂无班级，请先添加班级',
+                addMain: '添加班级', addNewMain: '添加新班级', noSub: '暂无备注',
+                addMainHint: '请点击左侧「+ 班级」按钮开始添加班级',
+                dragHint: '请从上方班级池中拖拽班级到课表中',
+                tutorialAddTitle: '添加班级', tutorialAddDesc: '点击“+ 班级”按钮创建班级',
+                tutorialDragDesc: '将班级拖到课表对应位置',
+                importSuccess: '班级导入成功！'
+            },
+            generic: {
+                main: '名称', sub: '备注',
+                poolTitle: '内容池', addMainBtn: '+ 添加', importBtn: '导入内容',
+                modalTitle: '内容设置', mainFieldLabel: '名称', subFieldLabel: '备注',
+                mainPlaceholder: '请输入名称', subPlaceholder: '请输入备注（可选）',
+                selectMain: '选择内容', searchPlaceholder: '搜索名称或备注...',
+                notFound: '未找到匹配的内容', emptyText: '暂无内容，请先添加内容',
+                addMain: '添加内容', addNewMain: '添加新内容', noSub: '暂无备注',
+                addMainHint: '请点击左侧「+ 添加」按钮开始添加内容',
+                dragHint: '请从上方内容池中拖拽内容到表格中',
+                tutorialAddTitle: '添加内容', tutorialAddDesc: '点击“+ 添加”按钮创建内容',
+                tutorialDragDesc: '将内容拖到表格对应位置',
+                importSuccess: '内容导入成功！'
+            }
+        };
+        return labels[type] || labels.course;
+    }
+
+    // 将当前表格类型的文案应用到界面上
+    applyLabels() {
+        const L = this.getLabels();
+        const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        };
+        setText('subjectPoolTitle', L.poolTitle);
+        setText('importSubjectBtn', L.importBtn);
+        setText('addSubjectBtn', L.addMainBtn);
+        // 预设导入仅适用于课程表模式（科目为预设数据），其他模式隐藏
+        const importBtn = document.getElementById('importSubjectBtn');
+        if (importBtn) {
+            importBtn.style.display = (this.settings.appType === 'course') ? '' : 'none';
+        }
+        setText('subjectModalTitle', L.modalTitle);
+        setText('subjectNameLabel', L.mainFieldLabel);
+        setText('teacherNameLabel', L.subFieldLabel);
+        const nameInput = document.getElementById('subjectName');
+        if (nameInput) nameInput.placeholder = L.mainPlaceholder;
+        const teacherInput = document.getElementById('teacherName');
+        if (teacherInput) teacherInput.placeholder = L.subPlaceholder;
     }
 
     // 备份数据相关方法
@@ -981,8 +1080,14 @@ class TimetableApp {
                 periods: this.periods,
                 sectionNames: this.sectionNames,
                 settings: this.settings,
+                tableTitle: document.getElementById('tableTitle')?.value || localStorage.getItem('tableTitle') || '',
+                tableTitleCustom: this.tableTitleCustom,
+                // 主题、自定义颜色、字体
+                theme: localStorage.getItem('timetable-theme') || 'default',
+                customColor: localStorage.getItem('timetable-custom-color') || '',
+                font: localStorage.getItem('timetable-font') || 'system',
                 exportTime: new Date().toISOString(),
-                version: '1.0'
+                version: '1.2'
             };
             
             const dataStr = JSON.stringify(data, null, 2);
@@ -996,9 +1101,10 @@ class TimetableApp {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            // 延迟释放 URL，避免部分浏览器在下载真正开始前就释放导致下载失败
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
             
-            this.showNotification('数据导出成功！', 'success');
+            this.showNotification('备份文件已生成，请检查浏览器下载栏', 'success');
             this.closeBackupMenu({ target: null });
         } catch (error) {
             console.error('导出数据失败:', error);
@@ -1216,12 +1322,38 @@ class TimetableApp {
                 console.log('设置数据加载:', this.settings);
                 // 应用设置
                 this.applySettings();
+                // 应用表格类型文案（课程表/班级课表/通用表格），否则界面标签不会随备份切换
+                this.applyLabels();
             }
             
             // 重新渲染界面
             this.renderTimetable();
             this.renderSubjects();
             
+            // 恢复自定义标题（旧版备份可能没有该字段）
+            if (typeof data.tableTitle === 'string' && data.tableTitle) {
+                this.tableTitleCustom = !!data.tableTitleCustom;
+                const titleInput = document.getElementById('tableTitle');
+                if (titleInput) titleInput.value = data.tableTitle;
+                localStorage.setItem('tableTitle', data.tableTitle);
+            } else {
+                // 旧版本备份：标题未自定义，按当前设置自动生成匹配的标题
+                this.tableTitleCustom = false;
+                this.updateAutoTableTitle();
+            }
+
+            // 恢复主题、自定义颜色与字体（旧版备份可能没有这些字段）
+            if (typeof data.theme === 'string' && data.theme) {
+                if (data.theme === 'custom' && data.customColor) {
+                    // 先写入自定义颜色，setTheme('custom') 内部会读取它
+                    localStorage.setItem('timetable-custom-color', data.customColor);
+                }
+                setTheme(data.theme);
+            }
+            if (typeof data.font === 'string' && data.font) {
+                setFont(data.font);
+            }
+
             // 保存到本地存储
             this.saveData();
             localStorage.setItem('timetableSettings', JSON.stringify(this.settings));
@@ -1295,11 +1427,19 @@ class TimetableApp {
         this.settings.showSunday = showSundayCheckbox.checked;
         this.settings.showPeriodTime = showPeriodTimeCheckbox.checked;
 
+        const appTypeChecked = document.querySelector('input[name="appType"]:checked');
+        if (appTypeChecked) {
+            this.settings.appType = appTypeChecked.value;
+        }
+
         // 保存设置到本地存储
         localStorage.setItem('timetableSettings', JSON.stringify(this.settings));
         
         // 应用设置并重新渲染
         this.applySettings();
+        this.applyLabels();
+        // 若标题未自定义，则根据显示列自动更新标题（如：周一到周五/周六/周日课程表）
+        this.updateAutoTableTitle();
         this.closeSettingsModal();
     }
 
@@ -1331,7 +1471,7 @@ class TimetableApp {
                 background: #4CAF50; color: white; padding: 15px 25px; border-radius: 8px; 
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; 
                 animation: fadeInOut 3s ease-in-out;">
-                    请点击左侧「+ 科目」按钮开始添加科目
+                    ${this.getLabels().addMainHint}
                 </div>
                 <style>
                 @keyframes fadeInOut {
@@ -1366,7 +1506,7 @@ class TimetableApp {
                     background: #2196F3; color: white; padding: 15px 25px; border-radius: 8px; 
                     box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; 
                     animation: fadeInOut 3s ease-in-out;">
-                        请从上方科目池中拖拽科目到课程表中
+                        ${this.getLabels().dragHint}
                     </div>
                     <style>
                     @keyframes fadeInOut {
@@ -1600,6 +1740,7 @@ class TimetableApp {
     // 手机端选择科目功能
     showMobileSubjectSelector(day, section, period) {
         const cellKey = `${day}-${section}-${period}`;
+        const L = this.getLabels();
         
         // 创建弹窗
         const modal = document.createElement('div');
@@ -1642,7 +1783,7 @@ class TimetableApp {
         `;
         
         const title = document.createElement('h3');
-        title.textContent = '选择科目';
+        title.textContent = L.selectMain;
         title.style.cssText = 'margin: 0; font-size: 18px; color: #333; font-weight: 600;';
         
         const closeBtn = document.createElement('button');
@@ -1673,7 +1814,7 @@ class TimetableApp {
         
         const searchInput = document.createElement('input');
         searchInput.type = 'text';
-        searchInput.placeholder = '搜索科目或老师...';
+        searchInput.placeholder = L.searchPlaceholder;
         searchInput.style.cssText = `
             width: 100%;
             padding: 10px 15px;
@@ -1722,12 +1863,12 @@ class TimetableApp {
                     grid-column: 1 / -1;
                 `;
                 emptyMessage.innerHTML = filterText 
-                    ? `<div style="font-size: 48px; margin-bottom: 10px;">🔍</div><div>未找到匹配的科目</div>`
+                    ? `<div style="font-size: 48px; margin-bottom: 10px;">🔍</div><div>${L.notFound}</div>`
                     : `<div style="font-size: 48px; margin-bottom: 10px;">📚</div>
-                       <div>暂无科目，请先添加科目</div>
+                       <div>${L.emptyText}</div>
                        <button onclick="document.getElementById('addSubjectBtn').click(); this.closest('.mobile-subject-modal').remove();" 
                                style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                           添加科目
+                           ${L.addMain}
                        </button>`;
                 list.appendChild(emptyMessage);
             } else {
@@ -1770,7 +1911,7 @@ class TimetableApp {
                     subjectName.style.cssText = 'font-weight: 600; color: #333; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
                     
                     const teacherName = document.createElement('div');
-                    teacherName.textContent = subject.teacher || '暂无老师';
+                    teacherName.textContent = subject.teacher || L.noSub;
                     teacherName.style.cssText = 'font-size: 11px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
                     
                     textContainer.appendChild(subjectName);
@@ -1799,25 +1940,6 @@ class TimetableApp {
         
         listContainer.appendChild(list);
         
-        if (this.subjects.length === 0) {
-            const emptyMessage = document.createElement('div');
-            emptyMessage.style.cssText = `
-                text-align: center;
-                padding: 40px 20px;
-                color: #999;
-                font-size: 14px;
-            `;
-            emptyMessage.innerHTML = `
-                <div style="font-size: 48px; margin-bottom: 10px;">📚</div>
-                <div>暂无科目，请先添加科目</div>
-                <button onclick="document.getElementById('addSubjectBtn').click(); this.closest('.mobile-subject-modal').remove();" 
-                        style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    添加科目
-                </button>
-            `;
-            listContainer.appendChild(emptyMessage);
-        }
-        
         // 底部按钮区域
         const footer = document.createElement('div');
         footer.style.cssText = `
@@ -1828,7 +1950,7 @@ class TimetableApp {
         `;
         
         const addSubjectBtn = document.createElement('button');
-        addSubjectBtn.textContent = '添加新科目';
+        addSubjectBtn.textContent = L.addNewMain;
         addSubjectBtn.style.cssText = `
             flex: 1;
             padding: 10px;
@@ -2128,7 +2250,7 @@ class TimetableApp {
     }
 
     resetTimetable() {
-        if (confirm('确定要重置整个课程表吗？这将清空课程表内容但保留科目')) {
+        if (confirm('确定要重置整个课程表吗？这将清空课程表内容但保留' + this.getLabels().main + '池')) {
             // 只重置课程表内容，保留科目池
             this.timetable = {};
             this.periods = {
@@ -2743,7 +2865,31 @@ class TimetableApp {
     }
 
     saveTableTitle(title) {
+        // 用户手动输入标题时标记为已自定义
+        this.tableTitleCustom = true;
         localStorage.setItem('tableTitle', title);
+    }
+
+    // 根据设置的显示列自动生成表格标题（如：周一到周五课程表 / 周一到周六课程表 / 周一到周日课程表）
+    generateAutoTableTitle() {
+        let lastDay = '周五';
+        if (this.settings.showSunday) {
+            lastDay = '周日';
+        } else if (this.settings.showSaturday) {
+            lastDay = '周六';
+        }
+        return `周一到${lastDay}课程表`;
+    }
+
+    // 若标题未被用户自定义，则自动更新为与实际显示列匹配的标题
+    updateAutoTableTitle() {
+        if (this.tableTitleCustom) return;
+        const autoTitle = this.generateAutoTableTitle();
+        const titleInput = document.getElementById('tableTitle');
+        if (titleInput) {
+            titleInput.value = autoTitle;
+            localStorage.setItem('tableTitle', autoTitle);
+        }
     }
 
     loadTableTitle() {
@@ -2751,6 +2897,14 @@ class TimetableApp {
         const titleInput = document.getElementById('tableTitle');
         if (savedTitle) {
             titleInput.value = savedTitle;
+            // 若保存的标题与自动生成的标题一致，则视为未自定义，后续可随设置自动更新
+            this.tableTitleCustom = savedTitle !== this.generateAutoTableTitle();
+        } else {
+            // 首次使用时写入默认标题（与当前显示的列匹配）
+            this.tableTitleCustom = false;
+            const autoTitle = this.generateAutoTableTitle();
+            titleInput.value = autoTitle;
+            localStorage.setItem('tableTitle', autoTitle);
         }
     }
 
