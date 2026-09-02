@@ -15,8 +15,9 @@
 - jsDelivr 国内镜像
   https://jsd.cdn.zzko.cn/gh/wsj0051/files@main/img/avatar.jpg
 
-
-
+- ghfast
+  https://ghfast.top/https://github.com/wsj0051/files/blob/main/img/avatar.jpg
+  https://ghfast.top/https://raw.githubusercontent.com/wsj0051/files/refs/heads/main/img/avatar.jpg
 ---
 
 ## 🗓️ 课程表
@@ -29,7 +30,8 @@
 
 ## 🎲 随机点名
 
-+ [随机点名v1.0](./html/random_v1.html)
++ [随机点名](./html/random.html)
++ [网页](https://wsj0051.github.io/files/html/random.html)
 
 ---
 

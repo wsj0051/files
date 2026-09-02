@@ -196,7 +196,7 @@ button:active {
     <label>人数 
       <input id="count" type="number" value="1" min="1">
     </label>
-    <label><input type="checkbox" id="repeat" checked> 允许重复</label>
+    <label><input type="checkbox" id="repeat"> 允许重复</label>
     <label><input type="checkbox" id="voice" checked> 语音播报</label>
     <label>主题
       <select id="theme">
@@ -273,18 +273,26 @@ button:active {
 <script>
 /* ===== 数据 ===== */
 const KEY="rollcall_v5";
+/* 示例数据：两个班级，导出时即为两个 Sheet */
+const SAMPLE_CLASSES=[
+  {name:"高一(1)班", students:Array.from({length:40},(_,i)=>"学生"+(i+1)), used:[]},
+  {name:"高一(2)班", students:Array.from({length:40},(_,i)=>"学生"+(i+1)), used:[]}
+];
+function sampleClasses(){
+  return SAMPLE_CLASSES.map(c=>({name:c.name, students:[...c.students], used:[]}));
+}
 let store=JSON.parse(localStorage.getItem(KEY))||{
-  classes:[{
-    name:"示例班级",
-    students:Array.from({length:30},(_,i)=>"学生"+(i+1)),
-    used:[]
-  }],
+  classes: sampleClasses(),
   selectedIdx: 0,
   theme: "",
   count: 1,
-  repeat: true,
+  repeat: false,
   voice: true
 };
+// 迁移：旧版本地存储里只有单个「示例班级」（说明未导入过真实数据），替换为两个班级的示例
+if(store.classes.length===1 && store.classes[0].name==="示例班级"){
+  store.classes=sampleClasses();
+}
 let idx=0;
 
 /* ===== DOM ===== */
@@ -313,7 +321,7 @@ function init(){
   themeEl.value = store.theme || "";
   document.body.dataset.theme = store.theme || "";
   countEl.value = store.count || 1;
-  repeatEl.checked = store.repeat !== undefined ? store.repeat : true;
+  repeatEl.checked = store.repeat !== undefined ? store.repeat : false;
   voiceEl.checked = store.voice !== undefined ? store.voice : true;
   renderNames();
 }
