@@ -30,8 +30,8 @@
 
 ## 🎲 随机点名
 
-+ [随机点名](./html/random.html)
-+ [网页](https://wsj0051.github.io/files/html/random.html)
++ [随机点名](./html/random/index.html)
++ [网页](https://wsj0051.github.io/files/html/random/index.html)
 
 ---
 
