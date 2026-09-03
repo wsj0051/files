@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>点名器</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- SheetJS：优先加载本地副本以支持完全离线；本地文件缺失时自动回退 CDN -->
+<script src="./js/xlsx.full.min.js"></script>
+<script>window.XLSX||document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');</script>
+<style>
+:root{
+  --bg:#f5f7fa;
+  --card:#ffffff;
+  --text:#333;
+  --primary:#4f7cff;
+  --name-bg:#eee;
+  --shadow: 0 6px 16px rgba(0,0,0,.08);
+}
+[data-theme="dark"]{
+  --bg:#1e1f22;
+  --card:#2a2b2f;
+  --text:#eee;
+  --primary:#4f7cff;
+  --name-bg:#444;
+  --shadow: 0 6px 16px rgba(0,0,0,.2);
+}
+[data-theme="green"]{
+  --bg:#f0f7f2;
+  --card:#ffffff;
+  --text:#333;
+  --primary:#3ba776;
+  --name-bg:#eee;
+  --shadow: 0 6px 16px rgba(0,0,0,.08);
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:system-ui, sans-serif;
+  color:var(--text);
+  transition: background 0.3s ease;
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:16px;
+}
+.card{
+  background:var(--card);
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:16px;
+  box-shadow:var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,.12);
+}
+.row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:center;
+}
+button,select,input{
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-size:14px;
+  transition: all 0.2s ease;
+}
+button{background:var(--primary);color:#fff;border:none;cursor:pointer}
+button.secondary{background:#888;}
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,.1);
+}
+button:active {
+  transform: scale(0.95);
+}
+.names{
+  opacity: 0;
+  animation: fadeInNames 0.5s ease forwards;
+}
+@keyframes fadeInNames {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* 名单按班级分区 */
+.sec{
+  margin-bottom:16px;
+}
+.sec:last-child{
+  margin-bottom:0;
+}
+.sec-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  padding:2px 2px 8px;
+  border-bottom:1px dashed var(--line, #e5e6eb);
+  margin-bottom:8px;
+}
+.sec-name{
+  font-weight:600;
+  font-size:15px;
+  color:var(--text);
+}
+.sec-cnt{
+  font-size:12px;
+  color:#999;
+}
+.sec-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(80px,1fr));
+  gap:6px;
+}
+.name{
+  position:relative;
+  padding:6px;
+  text-align:center;
+  border-radius:6px;
+  background:var(--name-bg);
+  color:var(--text);
+  cursor:pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+  animation: popIn 0.3s ease;
+}
+/* 自定义悬停气泡：无原生 title 的延迟，悬停即显示 */
+.name::after{
+  content:attr(data-tip);
+  position:absolute;
+  bottom:calc(100% + 8px);
+  left:50%;
+  transform:translateX(-50%);
+  background:#40444d;
+  color:#fff;
+  font-size:12px;
+  line-height:1.4;
+  padding:3px 9px;
+  border-radius:6px;
+  white-space:nowrap;
+  pointer-events:none;
+  z-index:10;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .12s ease, visibility .12s ease;
+}
+/* 小箭头 */
+.name::before{
+  content:"";
+  position:absolute;
+  bottom:calc(100% + 4px);
+  left:50%;
+  transform:translateX(-50%);
+  border:5px solid transparent;
+  border-top-color:#40444d;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .12s ease, visibility .12s ease;
+  z-index:10;
+  pointer-events:none;
+}
+.name:hover::after,
+.name:hover::before{
+  opacity:1;
+  visibility:visible;
+}
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.name.used{
+  text-decoration:line-through;
+  opacity:.5;
+  background: #ddd;
+}
+.name:hover{
+  transform:scale(1.1) rotate(2deg);
+  box-shadow: 0 4px 8px rgba(0,0,0,.1);
+}
+.popup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  animation:fadeIn 0.3s ease;
+}
+.popup-content{
+  background:var(--card);
+  padding:24px;
+  border-radius:16px;
+  font-size:26px;
+  text-align:center;
+  position:relative;
+  max-height:80vh;
+  overflow:auto; /* 人数较多或说明较长时可滚动，避免小屏内容溢出 */
+  transform: scale(0.8);
+  opacity: 0;
+  animation: zoomIn 0.4s ease forwards;
+}
+@keyframes zoomIn {
+  from { transform: scale(0.8) rotate(-5deg); opacity: 0; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
+}
+.popup-content span{
+  display:block;
+  margin:8px 0;
+  color:var(--primary);
+  font-weight:bold;
+  font-size:32px;
+  animation: glow 1.5s infinite alternate;
+}
+.popup-content span small{
+  display:block;
+  font-size:15px;
+  font-weight:normal;
+  color:var(--text);
+  opacity:.6;
+  animation:none;
+}
+@keyframes glow {
+  0% { text-shadow: 0 0 5px var(--primary); }
+  100% { text-shadow: 0 0 15px var(--primary); }
+}
+@keyframes fadeIn{
+  0%{opacity:0;}
+  100%{opacity:1;}
+}
+/* 点名结果：多人时使用紧凑网格卡片，避免一列大字号堆叠 */
+.popup-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
+  gap:10px;
+  width:min(660px,78vw);
+  max-height:56vh;
+  overflow:auto;
+  padding:2px;
+}
+.popup-cell{
+  background:var(--name-bg);
+  border-radius:10px;
+  padding:10px 6px;
+  text-align:center;
+  animation:popIn .3s ease;
+}
+.popup-cell-cls{
+  display:block;
+  font-size:12px;
+  color:#999;
+  margin-bottom:3px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.popup-cell-name{
+  display:block;
+  font-size:18px;
+  font-weight:600;
+  color:var(--text);
+  word-break:break-all;
+}
+
+.hint{
+  font-size:13px;
+  color:#888;
+  transition: color 0.3s ease;
+}
+
+/* ===== 班级多选卡片 ===== */
+.class-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.class-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--text);
+}
+.mini-btn{
+  background:none;
+  border:none;
+  color:var(--primary);
+  font-size:13px;
+  cursor:pointer;
+  padding:2px 6px;
+}
+.mini-btn:hover{text-decoration:underline}
+.class-checks{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:12px;
+}
+.class-check{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 12px;
+  border:1px solid #d5d7de;
+  border-radius:8px;
+  background:var(--card);
+  cursor:pointer;
+  user-select:none;
+  transition: all .2s ease;
+}
+.class-check input{
+  /* 视觉隐藏但保留可聚焦性，键盘用户可 Tab 到并按空格切换 */
+  position:absolute;
+  width:1px;
+  height:1px;
+  margin:-1px;
+  padding:0;
+  border:0;
+  clip:rect(0 0 0 0);
+  clip-path:inset(50%);
+  overflow:hidden;
+  white-space:nowrap;
+}
+.class-check:has(input:focus-visible){
+  outline:2px solid var(--primary);
+  outline-offset:1px;
+}
+.class-check-name{
+  font-size:14px;
+  color:var(--text);
+}
+.class-check.on{
+  border-color:var(--primary);
+  background:rgba(79,124,255,.08);
+  box-shadow:0 0 0 1px var(--primary) inset;
+}
+.class-check.on .class-check-name{
+  color:var(--primary);
+  font-weight:600;
+}
+[data-theme="dark"] .class-check{
+  border-color:#4a4b52;
+}
+[data-theme="dark"] .class-check.on{
+  background:rgba(79,124,255,.15);
+}
+[data-theme="dark"] .sec-head{
+  border-bottom-color:#3d3e44;
+}
+[data-theme="dark"] .name.used{
+  background:#3d3e44;
+}
+[data-theme="green"] .name.used{
+  background:#e0ece4;
+}
+[data-theme="green"] .class-check.on{
+  background:rgba(59,167,118,.1);
+}
+.empty-tip{
+  width:100%;
+  text-align:center;
+  color:#999;
+  font-size:14px;
+  padding:24px 0;
+}
+/* 键盘可达性：所有可交互元素统一显示焦点环 */
+:focus-visible{
+  outline:2px solid var(--primary);
+  outline-offset:2px;
+}
+/* 弹框打开时锁定背景滚动，避免多人名单网格滚动时页面跟着滚 */
+body.lock-scroll{overflow:hidden}
+/* 名单标题旁的总览统计 */
+.namesStat{
+  font-size:13px;
+  font-weight:normal;
+  color:#999;
+  margin-left:8px;
+}
+/* 名单标题行：标题与「只看未点」开关分居两端 */
+.names-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.names-head h3{margin:0;}
+.only-unused{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  font-size:13px;
+  color:#888;
+  cursor:pointer;
+  user-select:none;
+  white-space:nowrap;
+}
+.only-unused input{accent-color:var(--primary);cursor:pointer;}
+/* 名单姓名搜索框 */
+.name-filter{
+  width:100%;
+  box-sizing:border-box;
+  margin-top:10px;
+  padding:8px 12px;
+  border:1px solid var(--line,#e5e6eb);
+  border-radius:8px;
+  font-size:14px;
+  background:var(--bg);
+  color:var(--text);
+}
+.name-filter::placeholder{color:#999}
+</style>
+</head>
+
+<body>
+<canvas id="explosionCanvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999;"></canvas>
+<div class="container">
+
+<!-- 班级选择 + 点名规则 -->
+<div class="card">
+  <h3>📘 班级与点名规则</h3>
+  <div class="class-wrap">
+    <span class="class-title" id="classTitle">班级</span>
+    <button type="button" class="mini-btn" id="toggleAllBtn">全选</button>
+  </div>
+  <div id="classChecks" class="class-checks"></div>
+  <div class="row">
+    <label>人数 
+      <input id="count" type="number" value="1" min="1">
+    </label>
+    <label><input type="checkbox" id="repeat"> 允许重复</label>
+    <label><input type="checkbox" id="voice" checked> 语音播报</label>
+    <label>音色
+      <select id="pitch">
+        <option value="0.6">低沉</option>
+        <option value="1" selected>标准</option>
+        <option value="1.6">活泼</option>
+      </select>
+    </label>
+    <label>主题
+      <select id="theme">
+        <option value="">浅色</option>
+        <option value="dark">深色</option>
+        <option value="green">护眼</option>
+      </select>
+    </label>
+  </div>
+  <div class="hint">勾选 1 个班级为单班点名；勾选多个班级为跨班点名（结果显示「班级 + 姓名」）。右上角「全选 / 全不选」可一键切换；名单通过 Excel 导入管理</div>
+</div>
+
+<!-- 操作按钮 -->
+<div class="card">
+  <div class="row">
+    <button onclick="start()">▶ 开始点名</button>
+    <button class="secondary" onclick="resetUsed()">🔄 重置已点</button>
+    <button onclick="exportExcel()">导出Excel</button>
+    <input type="file" id="file" hidden accept=".xlsx,.xls,.csv">
+    <button onclick="document.getElementById('file').click()">导入Excel</button>
+    <button onclick="showHelp()">❓ 使用说明</button>
+  </div>
+</div>
+
+<!-- 学生名单显示 -->
+<div class="card">
+  <div class="names-head">
+    <h3>👥 名单<span class="namesStat" id="namesStat"></span></h3>
+    <label class="only-unused"><input type="checkbox" id="onlyUnused"> 只看未点</label>
+  </div>
+  <input type="search" id="nameFilter" class="name-filter" placeholder="🔍 搜索学生姓名…" autocomplete="off">
+  <div class="names" id="names"></div>
+</div>
+
+</div>
+
+<!-- 点名结果弹框 -->
+<div class="popup" id="popup" role="dialog" aria-modal="true" aria-label="点名结果" onclick="hidePopup()">
+  <div class="popup-content" id="popupText" onclick="event.stopPropagation()"></div>
+</div>
+
+<!-- 使用说明弹框 -->
+<div class="popup" id="helpPopup" role="dialog" aria-modal="true" aria-label="使用说明" onclick="hideHelp()">
+  <div class="popup-content" style="max-width:520px;font-size:14px;text-align:left"
+       onclick="event.stopPropagation()">
+    <h3>📘 点名器使用说明</h3>
+    <p><b>一、Excel 数据格式</b></p>
+    <ul>
+      <li>一个 Sheet 表示一个班级</li>
+      <li>Sheet 名称 = 班级名称</li>
+      <li>第一行为表头（写：姓名）</li>
+      <li>第一列填写姓名</li>
+    </ul>
+    <p><b>二、导入规则（重要）</b></p>
+    <ul>
+      <li>导入 Excel 后，会 <b>完全替换</b> 当前所有班级</li>
+      <li>原有班级和点名记录将被清空</li>
+      <li>建议导入前先导出备份</li>
+    </ul>
+    <p><b>三、导出说明</b></p>
+    <ul>
+      <li>导出为一个 Excel 文件</li>
+      <li>每个班级单独一个 Sheet</li>
+      <li>仅导出学生名单（不包含点名状态）</li>
+    </ul>
+    <p><b>四、点名流程</b></p>
+    <ol>
+      <li>勾选 1 个班级为单班点名；勾选多个班级为跨班点名（结果显示班级 + 姓名）</li>
+      <li>班级标题右侧的「全选 / 全不选」可一键勾选或清空所有班级</li>
+      <li>名单区域右上角可勾选「只看未点」，隐藏已点过的学生；已点完会提示重置</li>
+      <li>名单上方搜索框可快速定位学生（与「只看未点」可叠加）；搜索仅影响显示，不影响点名范围</li>
+      <li>设置人数 / 是否重复 / 语音播报 / 音色（低沉、标准、活泼）/ 主题</li>
+      <li>点击「开始点名」</li>
+    </ol>
+    <p style="text-align:center;color:#888;margin-top:10px">
+      点击空白处关闭说明
+    </p>
+  </div>
+</div>
+
+<script>
+/* ===== 数据 ===== */
+const KEY="rollcall_v5";
+/* 示例数据：两个班级，导出时即为两个 Sheet */
+const SAMPLE_CLASSES=[
+  {name:"高一(1)班", students:Array.from({length:40},(_,i)=>"学生"+(i+1)), used:[]},
+  {name:"高一(2)班", students:Array.from({length:40},(_,i)=>"学生"+(i+1)), used:[]}
+];
+function sampleClasses(){
+  return SAMPLE_CLASSES.map(c=>({name:c.name, students:[...c.students], used:[]}));
+}
+function defaultStore(){
+  return {
+    classes: sampleClasses(),
+    selected:[0],
+    theme: "",
+    count: 1,
+    repeat: false,
+    voice: true,
+    showUnused: false, // 名单列表是否只显示未点学生
+    pitch: 1 // 语音音色：0.6 低沉 / 1 标准 / 1.6 活泼（低沉/活泼会联动语速以拉开听感差异）
+  };
+}
+// 安全加载：localStorage 数据损坏（JSON 语法错误等）时回退默认数据，避免脚本抛错白屏
+let store=null;
+try{
+  const raw=localStorage.getItem(KEY);
+  if(raw) store=JSON.parse(raw);
+}catch(e){
+  console.warn("本地存储数据损坏，已重置为默认数据:", e);
+  store=null;
+}
+if(!store || typeof store!=="object" || !Array.isArray(store.classes)) store=defaultStore();
+// 迁移：旧版本地存储里只有单个「示例班级」（说明未导入过真实数据），替换为两个班级的示例
+if(store.classes.length===1 && store.classes[0].name==="示例班级"){
+  store.classes=sampleClasses();
+}
+// 迁移：旧版用 selectedIdx（-1=全部），新版用 selected 数组（可多选）
+if(!Array.isArray(store.selected)){
+  if(store.selectedIdx===-1){
+    store.selected=store.classes.map((_,i)=>i);
+  }else{
+    store.selected=[(store.selectedIdx|0)||0];
+  }
+  delete store.selectedIdx;
+}
+// 过滤无效下标；selected=[]（全不选）是合法状态，可持久化
+store.selected=(store.selected||[]).filter(i=>i>=0&&i<store.classes.length);
+
+/* ===== DOM ===== */
+const classChecksEl=document.getElementById("classChecks");
+const toggleAllBtn=document.getElementById("toggleAllBtn");
+const namesEl=document.getElementById("names");
+const popup=document.getElementById("popup");
+const popupText=document.getElementById("popupText");
+const countEl=document.getElementById("count");
+const repeatEl=document.getElementById("repeat");
+const voiceEl=document.getElementById("voice");
+const themeEl=document.getElementById("theme");
+const fileEl=document.getElementById("file");
+const onlyUnusedEl=document.getElementById("onlyUnused");
+const nameFilterEl=document.getElementById("nameFilter");
+const pitchEl=document.getElementById("pitch");
+
+/* ===== 初始化 ===== */
+function init(){
+  renderClassChecks();
+  themeEl.value = store.theme || "";
+  document.body.dataset.theme = store.theme || "";
+  countEl.value = store.count || 1;
+  repeatEl.checked = store.repeat !== undefined ? store.repeat : false;
+  voiceEl.checked = store.voice !== undefined ? store.voice : true;
+  onlyUnusedEl.checked=!!store.showUnused;
+  // 音色兼容：旧存档可能存在 0.7 / 1.3 等已废弃档位，就近归一到当前档位，避免下拉回显错乱
+  const op=+store.pitch||1;
+  store.pitch = op<=0.85 ? 0.6 : op>=1.2 ? 1.6 : 1;
+  pitchEl.value=String(store.pitch);
+  renderNames();
+}
+/* 音色下拉：即时保存语音音调 */
+pitchEl.onchange=()=>{
+  store.pitch=+pitchEl.value||1;
+  save();
+};
+/* 只看未点开关：切换时保留持久化状态并刷新名单 */
+onlyUnusedEl.onchange=()=>{
+  store.showUnused=onlyUnusedEl.checked;
+  save();
+  renderNames();
+};
+/* 名单搜索：输入即过滤（与「只看未点」叠加生效）；仅影响显示，不影响点名范围 */
+nameFilterEl.oninput=()=>renderNames();
+
+/* ===== 班级多选卡片 ===== */
+function renderClassChecks(){
+  classChecksEl.innerHTML="";
+  store.classes.forEach((c,i)=>{
+    if(!Array.isArray(c.used)) c.used=[];
+    const label=document.createElement("label");
+    label.className="class-check"+(store.selected.includes(i)?" on":"");
+    const box=document.createElement("input");
+    box.type="checkbox";
+    box.checked=store.selected.includes(i);
+    box.value=i;
+    box.onchange=()=>{
+      if(box.checked){
+        if(!store.selected.includes(i)) store.selected.push(i);
+      }else{
+        store.selected=store.selected.filter(x=>x!==i);
+      }
+      store.selected.sort((a,b)=>a-b);
+      renderClassChecks();
+      renderNames();
+      save();
+    };
+    const name=document.createElement("span");
+    name.className="class-check-name";
+    name.textContent=c.name;
+    label.appendChild(box);
+    label.appendChild(name);
+    classChecksEl.appendChild(label);
+  });
+  // 全选 / 全不选按钮状态：classes 为空时禁用
+  const allSel=store.classes.length>0 && store.selected.length===store.classes.length;
+  toggleAllBtn.textContent=allSel ? "全不选" : "全选";
+  toggleAllBtn.disabled=store.classes.length===0;
+  updateClassTitle();
+}
+toggleAllBtn.onclick=()=>{
+  // 「全不选」是合法状态：允许 selected=[]，由渲染层显示空提示，不强制回退到默认班级
+  const allSel=store.classes.length>0 && store.selected.length===store.classes.length;
+  store.selected=allSel ? [] : store.classes.map((_,i)=>i);
+  renderClassChecks();
+  renderNames();
+  save();
+};
+/* 顶部标题：展示已选班级数与点名模式 */
+function updateClassTitle(){
+  const n=store.selected.length;
+  let text;
+  if(n===0) text="班级（未勾选）";
+  else if(n===1) text="班级（已选 1 个 · 单班点名）";
+  else text="班级（已选 "+n+" 个 · 跨班点名）";
+  document.getElementById("classTitle").textContent=text;
+}
+
+/* ===== 渲染名单（按班级分区） ===== */
+function renderNames(){
+  const showUnused=!!store.showUnused; // 只看未点：隐藏已点学生
+  const kw=(nameFilterEl.value||"").trim().toLowerCase(); // 姓名搜索关键字
+  // 标题旁总览：仅统计当前勾选班级
+  let total=0, used=0;
+  store.selected.forEach(ci=>{
+    const c=store.classes[ci];
+    if(!c) return;
+    total+=c.students.length;
+    used+=c.used.length;
+  });
+  const stat=document.getElementById("namesStat");
+  stat.textContent=total
+    ? (showUnused
+        ? ("未点 "+(total-used)+" 人 · 共 "+total+" 人")
+        : ("共 "+total+" 人 · 已点 "+used+" 人"))
+    : "";
+  namesEl.innerHTML="";
+  store.selected.forEach(ci=>{
+    const c=store.classes[ci];
+    if(!c) return;
+    // 先构建该班学生网格（只看未点时跳过已点学生）
+    const grid=document.createElement("div");
+    grid.className="sec-grid";
+    let shown=0; // 该班实际显示人数（已过筛选）
+    c.students.forEach((n,i)=>{
+      if(showUnused && c.used.includes(i)) return; // 只看未点：跳过已点学生
+      if(kw && !n.toLowerCase().includes(kw)) return; // 搜索关键字不匹配则跳过
+      shown++;
+      const d=document.createElement("div");
+      // 只看未点时展示的均为未点学生，无需划线样式
+      const used=showUnused ? false : c.used.includes(i);
+      d.className="name"+(used?" used":"");
+      d.textContent=n;
+      d.dataset.tip=used?"点击取消已点":"点击标记已点"; // 自定义悬停气泡（即时显示，替代原生 title 的延迟）
+      d.onclick=()=>toggleUsed(ci,i);
+      grid.appendChild(d);
+    });
+    // 该班经筛选后无任何可显示学生 → 整区隐藏（已点完或搜索无匹配）
+    if(shown===0) return;
+    // 班级分区标题：班级名 + 人数（人数随筛选动态变化）
+    const sec=document.createElement("div");
+    sec.className="sec";
+    const head=document.createElement("div");
+    head.className="sec-head";
+    const secName=document.createElement("span");
+    secName.className="sec-name";
+    secName.textContent=c.name;
+    const secCnt=document.createElement("span");
+    secCnt.className="sec-cnt";
+    const usedCnt=(Array.isArray(c.used))?c.used.length:0;
+    secCnt.textContent=kw
+      ? "匹配 "+shown+" 人"
+      : (showUnused
+          ? "未点 "+shown+" 人 · 共 "+c.students.length+" 人"
+          : "共 "+c.students.length+" 人 · 已点 "+usedCnt+" 人");
+    head.appendChild(secName);
+    head.appendChild(secCnt);
+    sec.appendChild(head);
+    sec.appendChild(grid);
+    namesEl.appendChild(sec);
+  });
+  if(!namesEl.children.length){
+    const tip=document.createElement("div");
+    tip.className="empty-tip";
+    if(store.classes.length===0){
+      tip.textContent="暂无班级数据，请先点击「导入Excel」添加名单";
+    }else if(store.selected.length===0){
+      tip.textContent="未勾选班级，请勾选班级后查看名单";
+    }else if(kw){
+      tip.textContent="没有找到姓名包含「"+kw+"」的学生";
+    }else if(showUnused){
+      tip.textContent="所选班级已全部点完，可点击「重置已点」重新开始";
+    }else{
+      tip.textContent="所选班级暂无学生名单";
+    }
+    namesEl.appendChild(tip);
+  }
+  // 触发动画：移除并重新添加类以重置动画
+  namesEl.style.animation = 'none';
+  namesEl.offsetHeight; // 触发重绘
+  namesEl.style.animation = '';
+}
+/* 切换某班某学生的已点状态（全部模式点击时也同步回对应班级） */
+function toggleUsed(ci,si){
+  const c=store.classes[ci];
+  if(c.used.includes(si)){
+    c.used=c.used.filter(x=>x!==si);
+  }else{
+    c.used.push(si);
+  }
+  renderNames();
+  save();
+}
+
+/* ===== 点名 ===== */
+function start(){
+  const num=Math.floor(+countEl.value)||0;
+  if(num<1) return alert("请设置要点名的人数（至少 1 人）");
+  const allow=repeatEl.checked;
+  const multi=store.selected.length>1; // 多班跨班点名
+  if(store.selected.length===0 || store.classes.length===0){
+    return alert("请先勾选班级");
+  }
+  // 构建点名池：勾选的多个班级合并
+  let pool=[];
+  store.selected.forEach(ci=>{
+    const c=store.classes[ci];
+    if(!c) return;
+    c.students.forEach((n,si)=>{
+      if(allow || !c.used.includes(si)) pool.push({ci,si,name:n,cls:c.name});
+    });
+  });
+  if(pool.length===0) return alert("没人可点了");
+  if(num>pool.length) alert("可点人数不足 "+num+" 人，将点名全部 "+pool.length+" 人");
+
+  let res=[];
+  for(let i=0;i<num&&pool.length;i++){
+    const r=pool.splice(Math.random()*pool.length|0,1)[0];
+    res.push(r);
+    if(!allow) store.classes[r.ci].used.push(r.si); // 同步标记回对应班级
+  }
+  // 多班时显示班级+姓名；单班只显示姓名
+  const show=res.map(x=>multi ? {name:x.name, cls:x.cls} : {name:x.name});
+  showPopup(show);
+  // 语音：跨班时把班级也读出来，如「高一(1)班，张三。高一(2)班，李四。」；单班只念姓名
+  const spoken=multi
+    ? res.map(x=>x.cls+"，"+x.name).join("。")
+    : res.map(x=>x.name).join("、");
+  if(voiceEl.checked) speak(spoken);
+  renderNames();
+  save();
+}
+
+/* ===== 弹框 ===== */
+function showPopup(list){
+  // list 项：{name} 或 {name, cls}（跨班点名时显示班级小字）
+  // 用 DOM + textContent 构建，防止 Excel 导入的姓名含 HTML 时产生注入
+  popupText.innerHTML="";
+  if(list.length===1){
+    // 单人：大号居中庆祝样式
+    const x=list[0];
+    const sp=document.createElement("span");
+    if(x.cls){
+      const sm=document.createElement("small");
+      sm.textContent=x.cls;
+      sp.appendChild(sm);
+    }
+    sp.appendChild(document.createTextNode(x.name));
+    popupText.appendChild(sp);
+  }else{
+    // 多人：紧凑网格卡片，一行多个、可滚动
+    const grid=document.createElement("div");
+    grid.className="popup-grid";
+    list.forEach(x=>{
+      const cell=document.createElement("div");
+      cell.className="popup-cell";
+      if(x.cls){
+        const cls=document.createElement("div");
+        cls.className="popup-cell-cls";
+        cls.textContent=x.cls;
+        cell.appendChild(cls);
+      }
+      const nm=document.createElement("div");
+      nm.className="popup-cell-name";
+      nm.textContent=x.name;
+      cell.appendChild(nm);
+      grid.appendChild(cell);
+    });
+    popupText.appendChild(grid);
+  }
+  popup.style.display="flex";
+  document.body.classList.add("lock-scroll"); // 弹框打开时锁定背景滚动
+  triggerExplosion(); // 触发粒子爆炸
+}
+function hidePopup(){
+  popup.style.display="none";
+  document.body.classList.remove("lock-scroll");
+}
+/* Esc 关闭弹框（点名结果 / 使用说明） */
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  if(popup.style.display==="flex") hidePopup();
+  if(document.getElementById("helpPopup").style.display==="flex") hideHelp();
+});
+/* 键盘快捷键：页面空白处按空格直接开始点名（教室场景好用） */
+document.addEventListener("keydown",e=>{
+  if(e.code!=="Space") return;
+  if(document.activeElement!==document.body) return; // 焦点在输入框/按钮上时交给控件本身
+  if(popup.style.display==="flex" || document.getElementById("helpPopup").style.display==="flex") return; // 弹框打开时不触发
+  e.preventDefault(); // 阻止空格默认滚动页面
+  start();
+});
+
+/* ===== 语音 ===== */
+// 音色参数表：pitch（音调）与 rate（语速）联动。
+// 部分浏览器 / 系统语音引擎对 pitch 响应很弱，仅调 pitch 几乎听不出差别，
+// 因此低沉同时放慢语速、活泼同时加快语速，拉开听感差异。
+const TONES={
+  "0.6":{pitch:0.6, rate:0.85}, // 低沉：更低、更慢
+  "1":  {pitch:1,   rate:0.9},  // 标准
+  "1.6":{pitch:1.6, rate:1.05}  // 活泼：更高、更快
+};
+let zhVoice=null; // 缓存的第一个中文语音，避免每次查询
+function pickZhVoice(){
+  try{
+    if(!window.speechSynthesis) return;
+    zhVoice=speechSynthesis.getVoices().find(v=>v.lang && v.lang.toLowerCase().startsWith("zh"))||null;
+  }catch(e){}
+}
+if(window.speechSynthesis) speechSynthesis.onvoiceschanged=pickZhVoice; // Chrome 语音列表异步加载
+function speak(t){
+  try{
+    if(!window.speechSynthesis) return; // 浏览器不支持时静默跳过
+    speechSynthesis.cancel(); // 停止之前排队未播完的语音，避免连点排队
+    const u=new SpeechSynthesisUtterance(t);
+    u.lang="zh-CN";
+    const tone=TONES[pitchEl.value]||TONES["1"]; // 按音色档位取 pitch + 语速
+    u.pitch=tone.pitch;
+    u.rate=tone.rate;
+    // 优先选中文语音，提升兼容性（部分浏览器默认英语 voice 读中文很差/不发声）
+    if(!zhVoice) pickZhVoice();
+    if(zhVoice) u.voice=zhVoice;
+    speechSynthesis.speak(u);
+  }catch(e){
+    console.warn("语音播报失败:", e);
+  }
+}
+
+/* ===== Excel 导入导出 ===== */
+function exportExcel(){
+  if(typeof XLSX==="undefined"){
+    return alert("Excel 组件加载失败，请检查网络后刷新页面重试");
+  }
+  try{
+    const wb=XLSX.utils.book_new();
+    const seen=new Set();
+    store.classes.forEach((c,i)=>{
+      // Sheet 名须唯一且合法（≤31 字符，去掉 Excel 非法字符）
+      let base=String(c.name||("班级"+(i+1))).replace(/[\\/?*\[\]:]/g,"_").slice(0,31)||("班级"+(i+1));
+      let sn=base,k=2;
+      while(seen.has(sn)) sn=base.slice(0,28)+"_"+(k++);
+      seen.add(sn);
+      const ws=XLSX.utils.aoa_to_sheet([["姓名"], ...c.students.map(s=>[s])]);
+      XLSX.utils.book_append_sheet(wb, ws, sn);
+    });
+    const date=new Date().toISOString().slice(0,10); // YYYY-MM-DD
+    XLSX.writeFile(wb,"点名数据_"+date+".xlsx");
+  }catch(err){
+    console.error(err);
+    alert("导出失败："+err.message);
+  }
+}
+fileEl.onchange=e=>{
+  if(typeof XLSX==="undefined"){
+    return alert("Excel 组件加载失败，请检查网络后刷新页面重试");
+  }
+  const f=e.target.files[0];
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(r.result),{type:"array"});
+      // 安全确认：导入会完全替换当前数据，有已点名记录时重点提醒
+      const hasRecords=store.classes.some(c=>Array.isArray(c.used)&&c.used.length>0);
+      const msg=hasRecords
+        ? "导入将完全替换当前所有班级，并清空已有点名记录，确定继续？"
+        : "导入将完全替换当前所有班级，确定继续？";
+      if(!confirm(msg)) return;
+      store.classes=wb.SheetNames.map(n=>{
+        const a=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1}).slice(1);
+        return {name:n, students:a.map(x=>x[0]).filter(Boolean), used:[]}; // 过滤空姓名
+      }).filter(c => c.students.length > 0); // 过滤空班级
+      if(store.classes.length===0){
+        alert("文件中没有可用的班级数据（每个 Sheet 一个班级，第一列填写姓名）");
+        return;
+      }
+      store.selected = [0];
+      init();
+      save();
+    }catch(err){
+      console.error(err);
+      alert("导入失败："+err.message+"（请确保是有效的 Excel 文件）");
+    }
+  };
+  r.onerror=()=>alert("文件读取失败，请重试");
+  r.readAsArrayBuffer(f);
+  e.target.value=""; // 允许再次选择同一文件
+};
+
+/* ===== 主题切换 & 其他设置 & 存储 ===== */
+themeEl.onchange=e=>{
+  document.body.dataset.theme=e.target.value;
+  store.theme = e.target.value;
+  save();
+};
+countEl.oninput=()=>{
+  // 输入即保存并即时生效；非法值（0/负数/空）回退为 1
+  let v=Math.floor(+countEl.value);
+  if(!(v>=1)) v=1;
+  countEl.value=v;
+  store.count=v;
+  save();
+};
+repeatEl.onchange=()=>{ 
+  store.repeat = repeatEl.checked; 
+  save(); 
+};
+voiceEl.onchange=()=>{ 
+  store.voice = voiceEl.checked; 
+  save(); 
+};
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(store)); }
+  catch(e){ console.warn("保存失败（可能处于隐私模式或无存储权限）:", e); }
+}
+
+/* ===== 使用说明 ===== */
+function showHelp(){
+  document.getElementById("helpPopup").style.display="flex";
+  document.body.classList.add("lock-scroll"); // 弹框打开时锁定背景滚动
+}
+function hideHelp(){
+  document.getElementById("helpPopup").style.display="none";
+  document.body.classList.remove("lock-scroll");
+}
+
+/* ===== 重置已点 ===== */
+function resetUsed(){
+  if(store.selected.length===0) return alert("请先勾选班级");
+  const n=store.selected.length;
+  if(!confirm("确定要重置所选 "+n+" 个班级的已点名状态吗？")) return;
+  store.selected.forEach(ci=>{ if(store.classes[ci]) store.classes[ci].used=[]; });
+  renderNames();
+  save();
+}
+
+/* ===== 粒子爆炸动画 ===== */
+let particles = [];
+class Particle {
+  constructor(x, y, radius, dx, dy, color) {
+    this.x = x;
+    this.y = y;
+    this.radius = radius;
+    this.dx = dx;
+    this.dy = dy;
+    this.alpha = 1;
+    this.color = color;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+    ctx.fill();
+    ctx.restore();
+  }
+  update(ctx) {
+    this.draw(ctx);
+    this.alpha -= 0.01;
+    this.x += this.dx;
+    this.y += this.dy;
+  }
+}
+
+const explosionCanvas = document.getElementById("explosionCanvas");
+const expCtx = explosionCanvas.getContext("2d");
+// 用户开启"减少动态效果"时跳过粒子动画
+const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function resizeCanvas(){
+  explosionCanvas.width = window.innerWidth;
+  explosionCanvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+let rafId=null;
+function explode() {
+  expCtx.clearRect(0, 0, explosionCanvas.width, explosionCanvas.height);
+  // 倒序遍历，避免 splice 删除元素后索引错位跳过粒子
+  for (let i = particles.length - 1; i >= 0; i--) {
+    if (particles[i].alpha <= 0) {
+      particles.splice(i, 1);
+    } else {
+      particles[i].update(expCtx);
+    }
+  }
+  if (particles.length > 0) {
+    rafId = requestAnimationFrame(explode);
+  } else {
+    rafId = null;
+  }
+}
+
+function triggerExplosion() {
+  if(reduceMotion) return; // 尊重系统"减少动态效果"设置
+  // 取消仍在进行的上一轮动画，避免连续点名时多个 rAF 循环叠加
+  if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+  particles = [];
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+  const particleCount = 150;
+  const colors = ['#4f7cff', '#ff4f7c', '#7cff4f', '#ffff4f']; // 多颜色粒子
+
+  for (let i = 0; i < particleCount; i++) {
+    const dx = (Math.random() - 0.5) * (Math.random() * 8);
+    const dy = (Math.random() - 0.5) * (Math.random() * 8);
+    const radius = Math.random() * 4 + 1;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    particles.push(new Particle(centerX, centerY, radius, dx, dy, color));
+  }
+  explode();
+}
+
+/* ===== 初始化 ===== */
+init();
+</script>
+</body>
+</html>
